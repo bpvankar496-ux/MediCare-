@@ -1,11 +1,14 @@
 import { io, type Socket } from 'socket.io-client'
 
-// When VITE_API_URL isn't set, default to '' (same origin as the page).
-// That's correct for the single-process production build (npm start), where
-// this same server serves both the API and the built frontend on one port.
-// Local dev (npm run dev) explicitly sets VITE_API_URL in client/.env, since
-// the Vite dev server and the API run on different ports there.
-export const API_URL = (import.meta.env.VITE_API_URL as string) || ''
+// When VITE_API_URL isn't explicitly set, default based on Vite's built-in
+// PROD flag (always available, not dependent on any .env file reaching the
+// build): production builds default to '' (same origin as the page - correct
+// for the single-process deploy, where this server serves both the API and
+// the built frontend on one port). Dev (`vite`/`npm run dev`) defaults to
+// localhost:4000, since the Vite dev server and the API run on different
+// ports there. An explicit VITE_API_URL (from .env or a hosting provider's
+// env var) always wins over both defaults.
+export const API_URL = (import.meta.env.VITE_API_URL as string) || (import.meta.env.PROD ? '' : 'http://localhost:4000')
 
 export function getToken(): string | null {
   return localStorage.getItem('auth_token')
