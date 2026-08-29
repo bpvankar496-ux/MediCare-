@@ -1,6 +1,11 @@
 import { io, type Socket } from 'socket.io-client'
 
-export const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:4000'
+// When VITE_API_URL isn't set, default to '' (same origin as the page).
+// That's correct for the single-process production build (npm start), where
+// this same server serves both the API and the built frontend on one port.
+// Local dev (npm run dev) explicitly sets VITE_API_URL in client/.env, since
+// the Vite dev server and the API run on different ports there.
+export const API_URL = (import.meta.env.VITE_API_URL as string) || ''
 
 export function getToken(): string | null {
   return localStorage.getItem('auth_token')
@@ -152,7 +157,10 @@ class QueryBuilder<T = any> {
 
 let socket: Socket | null = null
 function getSocket(): Socket {
-  if (!socket) socket = io(API_URL, { autoConnect: true })
+  // io('') would try to connect to a literal empty-string host, so fall back
+  // to io() with no URL - that connects to the page's own origin, which is
+  // what we want both in same-origin production and whenever API_URL is unset.
+  if (!socket) socket = API_URL ? io(API_URL, { autoConnect: true }) : io({ autoConnect: true })
   return socket
 }
 

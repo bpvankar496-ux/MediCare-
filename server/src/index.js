@@ -8,12 +8,16 @@ import cors from 'cors'
 import mongoose from 'mongoose'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import fs from 'fs'
 
 import authRoutes from './routes/auth.js'
 import collectionRoutes from './routes/collections.js'
 import { seedCatalog } from './seed.js'
 import { attachRealtime } from './realtime.js'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PORT = process.env.PORT || 4000
 const MONGODB_URI = process.env.MONGODB_URI
 // In local dev it's easy for the client to end up on a different port/host
@@ -35,6 +39,21 @@ app.use(express.json({ limit: '5mb' }))
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 app.use('/api/auth', authRoutes)
 app.use('/api', collectionRoutes)
+
+// Serves the built frontend so the whole app can run as ONE process/deployment:
+// `npm run build` (root) builds client/dist, then this same server serves it
+// directly alongside the API - no separate frontend host/deploy needed.
+// In local dev (npm run dev), client/dist won't exist yet, so this is skipped
+// and Vite's own dev server (port 5173) handles the frontend instead.
+const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist')
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath))
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next()
+    res.sendFile(path.join(clientDistPath, 'index.html'))
+  })
+  console.log('Serving built frontend from client/dist alongside the API (single-process mode)')
+}
 
 app.use((req, res) => res.status(404).json({ error: 'Not found' }))
 // eslint-disable-next-line no-unused-vars

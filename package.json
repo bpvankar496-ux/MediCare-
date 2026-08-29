@@ -2,10 +2,12 @@
   "name": "hospital-app",
   "private": true,
   "version": "1.0.0",
-  "description": "Runs the client and server together with one command.",
+  "description": "Runs the client and server together with one command. `npm run dev` for local development (2 dev servers, hot reload). `npm start` for a single all-in-one process (builds the frontend, then one Node server serves everything - used for deployment).",
   "scripts": {
     "install:all": "npm install --prefix server && npm install --prefix client",
     "dev": "concurrently -n SERVER,CLIENT -c blue,green \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix client",
+    "start": "npm run build --prefix client && npm start --prefix server",
     "seed": "npm run seed --prefix server"
   },
   "devDependencies": {
