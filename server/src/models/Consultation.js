@@ -2,6 +2,10 @@ import mongoose from 'mongoose'
 import { applyIdTransform } from './plugin.js'
 
 const consultationSchema = new mongoose.Schema({
+  // Which patient this consultation belongs to - set server-side when a
+  // patient books it (see collections.js). Doctors/receptionists keep full
+  // access since they need to manage every patient's consultations.
+  patient_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   doctor_name: { type: String, required: true },
   patient_name: { type: String, required: true },
   date: { type: String, required: true },

@@ -2,6 +2,8 @@ import mongoose from 'mongoose'
 import { applyIdTransform } from './plugin.js'
 
 const labTestBookingSchema = new mongoose.Schema({
+  // Owner of this booking - always set server-side, see collections.js
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   test_ids: { type: [mongoose.Schema.Types.Mixed], default: [] },
   total: { type: Number, default: 0 },
   patient_name: { type: String, required: true },

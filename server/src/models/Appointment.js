@@ -2,6 +2,11 @@ import mongoose from 'mongoose'
 import { applyIdTransform } from './plugin.js'
 
 const appointmentSchema = new mongoose.Schema({
+  // Which patient this appointment belongs to - always set server-side for
+  // patients booking their own appointment (see collections.js). Doctors and
+  // receptionists can still see/manage every appointment, since that's part
+  // of their job, but a patient can only see/edit their own.
+  patient_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   doctor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', default: null },
   patient_name: { type: String, required: true },
   patient_age: { type: Number, default: null },

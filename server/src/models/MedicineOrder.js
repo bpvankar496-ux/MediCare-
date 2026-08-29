@@ -2,6 +2,8 @@ import mongoose from 'mongoose'
 import { applyIdTransform } from './plugin.js'
 
 const medicineOrderSchema = new mongoose.Schema({
+  // Owner of this order - always set server-side, see collections.js
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   order_number: { type: String, required: true, unique: true },
   items: { type: [mongoose.Schema.Types.Mixed], default: [] },
   total: { type: Number, default: 0 },

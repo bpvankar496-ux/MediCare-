@@ -1,13 +1,34 @@
 import { Router } from 'express'
 import mongoose from 'mongoose'
 import { registry, readOnlyViaGenericApi } from '../models/registry.js'
-import { requireAuth } from '../middleware/auth.js'
+import { requireAuth, attachRole } from '../middleware/auth.js'
 
 const router = Router()
 
 // Every collection in this app requires a logged-in user, same as the
 // Supabase "authenticated" RLS policies did.
 router.use(requireAuth)
+router.use(attachRole)
+
+// Collections that belong to exactly one user (health data, reminders, family
+// circle, orders, bookings). No role can ever see another user's rows here -
+// every request is forcibly filtered/tagged with `user_id = req.userId` below.
+// Without this, ANY logged-in account could read or edit ANY other patient's
+// health records simply by hitting the generic /api/:collection route.
+const OWNED_COLLECTIONS = new Set([
+  'health_records',
+  'vitals',
+  'family_members',
+  'reminders',
+  'medicine_orders',
+  'lab_test_bookings',
+])
+
+// Collections shared between a patient and clinical staff. Patients may only
+// see/edit rows where they are the patient (`patient_id`); doctors and
+// receptionists keep full access since managing every patient's appointment
+// is their job.
+const PATIENT_SCOPED_COLLECTIONS = new Set(['appointments', 'consultations'])
 
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -42,6 +63,36 @@ function buildFilter(query) {
   return filter
 }
 
+// Merges the base query-string filter with a forced ownership filter, so a
+// spoofed `?user_id=someoneElse` (or no filter at all) can never widen access
+// beyond what the caller is allowed to see. The forced value always wins.
+function scopeFilter(filter, req) {
+  if (OWNED_COLLECTIONS.has(req.collectionName)) {
+    return { ...filter, user_id: new mongoose.Types.ObjectId(req.userId) }
+  }
+  if (PATIENT_SCOPED_COLLECTIONS.has(req.collectionName) && req.userRole === 'patient') {
+    return { ...filter, patient_id: new mongoose.Types.ObjectId(req.userId) }
+  }
+  if (req.collectionName === 'profiles' && req.userRole === 'patient') {
+    // Patients can only ever look up their own profile through this generic
+    // route (staff still need to browse profiles to manage patients).
+    return { ...filter, _id: new mongoose.Types.ObjectId(req.userId) }
+  }
+  return filter
+}
+
+// Stamps the right ownership field onto a document being created, ignoring
+// whatever the client sent for that field.
+function scopeCreatePayload(doc, req) {
+  if (OWNED_COLLECTIONS.has(req.collectionName)) {
+    return { ...doc, user_id: req.userId }
+  }
+  if (PATIENT_SCOPED_COLLECTIONS.has(req.collectionName) && req.userRole === 'patient') {
+    return { ...doc, patient_id: req.userId }
+  }
+  return doc
+}
+
 router.param('collection', (req, res, next, collection) => {
   const Model = registry[collection]
   if (!Model) {
@@ -55,7 +106,7 @@ router.param('collection', (req, res, next, collection) => {
 // GET /api/:collection?col=val&_order=col&_dir=asc|desc
 router.get('/:collection', async (req, res) => {
   try {
-    const filter = buildFilter(req.query)
+    const filter = scopeFilter(buildFilter(req.query), req)
     let q = req.Model.find(filter)
     if (req.query._order) {
       q = q.sort({ [req.query._order]: req.query._dir === 'desc' ? -1 : 1 })
@@ -76,10 +127,11 @@ router.post('/:collection', async (req, res) => {
     }
     const payload = req.body
     if (Array.isArray(payload)) {
-      const created = await req.Model.insertMany(payload)
+      const scoped = payload.map((doc) => scopeCreatePayload(doc, req))
+      const created = await req.Model.insertMany(scoped)
       return res.status(201).json(created.map((d) => d.toJSON()))
     }
-    const created = await req.Model.create(payload)
+    const created = await req.Model.create(scopeCreatePayload(payload, req))
     return res.status(201).json(created.toJSON())
   } catch (err) {
     console.error('insert error', err)
@@ -96,8 +148,10 @@ router.patch('/:collection', async (req, res) => {
     if (readOnlyViaGenericApi.has(req.collectionName)) {
       return res.status(403).json({ error: 'This collection is managed automatically and cannot be updated directly' })
     }
-    const filter = buildFilter(req.query)
-    await req.Model.updateMany(filter, { $set: req.body })
+    const filter = scopeFilter(buildFilter(req.query), req)
+    // Never let an update reassign a row to a different owner.
+    const { user_id: _uid, patient_id: _pid, ...safeUpdate } = req.body || {}
+    await req.Model.updateMany(filter, { $set: safeUpdate })
     const docs = await req.Model.find(filter)
     res.json(docs.map((d) => d.toJSON()))
   } catch (err) {
@@ -112,7 +166,7 @@ router.delete('/:collection', async (req, res) => {
     if (readOnlyViaGenericApi.has(req.collectionName)) {
       return res.status(403).json({ error: 'This collection is managed automatically and cannot be deleted from directly' })
     }
-    const filter = buildFilter(req.query)
+    const filter = scopeFilter(buildFilter(req.query), req)
     const result = await req.Model.deleteMany(filter)
     res.json({ deletedCount: result.deletedCount })
   } catch (err) {

@@ -22,8 +22,11 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) { setError('Please enter both email and password'); return }
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return }
-    if (mode === 'signup' && !fullName.trim()) { setError('Please enter your full name'); return }
+    if (mode === 'signup') {
+      const strong = password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password)
+      if (!strong) { setError('Password must be at least 8 characters and include a letter and a number'); return }
+      if (!fullName.trim()) { setError('Please enter your full name'); return }
+    }
     setSubmitting(true)
     setError(null)
     const result = mode === 'signin' ? await signIn(email, password) : await signUp(email, password, fullName.trim(), role)
@@ -112,7 +115,7 @@ export default function Login() {
                 <label className="label">Password</label>
                 <div style={{ position: 'relative' }}>
                   <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input className="input" style={{ paddingLeft: 36 }} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} />
+                  <input className="input" style={{ paddingLeft: 36 }} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === 'signup' ? 'At least 8 characters, incl. a letter & number' : 'Your password'} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} />
                 </div>
               </div>
 

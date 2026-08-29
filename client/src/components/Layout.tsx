@@ -2,7 +2,7 @@ import { NavLink, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Stethoscope, Pill, FlaskConical, Video,
   FileText, BellRing, Activity, Calculator, MapPin, BookOpen,
-  Users, HeartPulse, ShieldPlus, X, LogOut, HeartHandshake,
+  Users, HeartPulse, ShieldPlus, X, LogOut, HeartHandshake, Settings as SettingsIcon,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../lib/auth'
@@ -105,6 +105,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-h)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email || 'User Account'}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Free Plan</div>
             </div>
+            <Link to="/settings" onClick={() => setMobileOpen(false)} title="Settings" style={{ display: 'inline-flex', background: 'none', border: 'none', padding: 6, color: 'var(--text-muted)', flexShrink: 0 }}>
+              <SettingsIcon size={18} />
+            </Link>
             <button onClick={signOut} title="Sign out" style={{ background: 'none', border: 'none', padding: 6, color: 'var(--text-muted)', flexShrink: 0 }}>
               <LogOut size={18} />
             </button>

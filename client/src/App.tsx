@@ -14,6 +14,7 @@ import Emergency from './pages/Emergency'
 import Articles from './pages/Articles'
 import Family from './pages/Family'
 import Inquiries from './pages/Inquiries'
+import Settings from './pages/Settings'
 import Login from './pages/Login'
 import DoctorDashboard from './pages/DoctorDashboard'
 import ReceptionistDashboard from './pages/ReceptionistDashboard'
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="/articles" element={<Articles />} />
         <Route path="/family" element={<Family />} />
         <Route path="/inquiries" element={<Inquiries />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </Layout>
   )

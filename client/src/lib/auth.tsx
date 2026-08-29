@@ -23,6 +23,8 @@ interface AuthContextValue {
   signUp: (email: string, password: string, fullName: string, role: Role) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
+  updateProfile: (fullName: string) => Promise<{ error: string | null }>
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: string | null }>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -108,8 +110,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadSession()
   }
 
+  // New feature: update the signed-in user's display name.
+  const updateProfile = async (fullName: string) => {
+    const token = getToken()
+    if (!token) return { error: 'Not signed in' }
+    try {
+      const res = await fetch(`${API_URL}/api/auth/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ full_name: fullName }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error((data && data.error) || 'Could not update profile')
+      setProfile((prev) => (prev ? { ...prev, full_name: fullName } : prev))
+      return { error: null }
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Could not update profile' }
+    }
+  }
+
+  // New feature: let a signed-in user change their own password.
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    const token = getToken()
+    if (!token) return { error: 'Not signed in' }
+    try {
+      const res = await fetch(`${API_URL}/api/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error((data && data.error) || 'Could not change password')
+      return { error: null }
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Could not change password' }
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut, refreshProfile, updateProfile, changePassword }}>
       {children}
     </AuthContext.Provider>
   )
