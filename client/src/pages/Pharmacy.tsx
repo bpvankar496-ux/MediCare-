@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Pill, Search, ShoppingCart, Plus, Minus, Trash2, CircleCheck as CheckCircle, Package } from 'lucide-react'
+import { Pill, Search, ShoppingCart, Plus, Minus, Trash2, CircleCheck as CheckCircle, Package, FileDown } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal } from '../lib/ui'
 import { PaymentPanel, PayingButton, type PaymentMethod } from '../lib/payment'
 import { useToast } from '../lib/toast'
 import { db } from '../lib/db'
+import { downloadInvoicePdf } from '../lib/pdf'
+import { useAuth } from '../lib/auth'
 import type { Medicine, CartItem, MedicineOrder } from '../lib/types'
 
 const CATEGORY_STYLE: Record<string, { bg: string; color: string }> = {
@@ -22,6 +24,7 @@ const defaultCategoryStyle = { bg: 'var(--neutral-100)', color: 'var(--primary-3
 export default function Pharmacy() {
   const { data: medicines, loading, error } = useSupabaseQuery<Medicine>('medicines')
   const { data: orders, refetch: refetchOrders } = useSupabaseQuery<MedicineOrder>('medicine_orders', '*', 'created_at', false)
+  const { profile } = useAuth()
   const { showToast } = useToast()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -160,14 +163,29 @@ export default function Pharmacy() {
           <h3 style={{ marginBottom: 14 }}>Recent Orders</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {orders.slice(0, 5).map((o) => (
-              <div key={o.id} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div key={o.id} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <Package size={20} color="var(--primary-500)" />
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 150 }}>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{o.order_number}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{new Date(o.created_at).toLocaleDateString()}</div>
                 </div>
                 <span style={{ fontWeight: 700 }}>₹{o.total}</span>
                 <span className="badge badge-info">{o.status}</span>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => downloadInvoicePdf({
+                    invoiceNumber: o.order_number,
+                    date: new Date(o.created_at).toLocaleDateString(),
+                    billedTo: profile?.full_name || profile?.email || 'Customer',
+                    items: o.items.map((i) => ({ name: i.name, brand: i.brand, quantity: i.quantity, price: i.price })),
+                    total: o.total,
+                    paymentMethod: o.payment_method,
+                    status: o.status,
+                    address: o.delivery_address,
+                  })}
+                >
+                  <FileDown size={14} /> Invoice
+                </button>
               </div>
             ))}
           </div>

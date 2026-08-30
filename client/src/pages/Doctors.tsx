@@ -109,6 +109,7 @@ export default function Doctors() {
       {/* Booking Modal */}
       <BookingModal
         doctor={selectedDoctor}
+        appointments={appointments ?? []}
         onClose={() => setSelectedDoctor(null)}
         onSuccess={() => { setBookingSuccess(true); refetchAppts(); showToast('Appointment booked successfully!', 'success') }}
         success={bookingSuccess}
@@ -229,8 +230,9 @@ function ReviewsModal({ doctor, reviews, onClose, onSubmitted }: {
   )
 }
 
-function BookingModal({ doctor, onClose, onSuccess, success }: {
+function BookingModal({ doctor, appointments, onClose, onSuccess, success }: {
   doctor: Doctor | null
+  appointments: Appointment[]
   onClose: () => void
   onSuccess: () => void
   success: boolean
@@ -242,6 +244,17 @@ function BookingModal({ doctor, onClose, onSuccess, success }: {
   if (!doctor) return null
 
   const today = new Date().toISOString().split('T')[0]
+
+  // New feature: real availability - a time slot already booked (status
+  // "upcoming") for this doctor on the chosen date is hidden from the
+  // dropdown instead of silently allowing a double-booking.
+  const allSlots = Array.from(new Set([...doctor.availability, '10:00-10:30', '11:00-11:30', '16:00-16:30']))
+  const bookedSlotsForDate = new Set(
+    appointments
+      .filter((a) => a.doctor_id === doctor.id && a.date === form.date && a.status === 'upcoming')
+      .map((a) => a.time_slot),
+  )
+  const availableSlots = form.date ? allSlots.filter((s) => !bookedSlotsForDate.has(s)) : allSlots
 
   const handleSubmit = async () => {
     if (!form.patient_name || !form.date || !form.time_slot) { setErr('Please fill in patient name, date, and time slot'); return }
@@ -306,17 +319,17 @@ function BookingModal({ doctor, onClose, onSuccess, success }: {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label className="label">Date *</label>
-              <input className="input" type="date" min={today} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+              <input className="input" type="date" min={today} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value, time_slot: '' })} />
             </div>
             <div>
               <label className="label">Time Slot *</label>
-              <select className="input" value={form.time_slot} onChange={(e) => setForm({ ...form, time_slot: e.target.value })}>
-                <option value="">Select slot</option>
-                {doctor.availability.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
-                <option value="10:00-10:30">10:00-10:30</option>
-                <option value="11:00-11:30">11:00-11:30</option>
-                <option value="16:00-16:30">16:00-16:30</option>
+              <select className="input" value={form.time_slot} onChange={(e) => setForm({ ...form, time_slot: e.target.value })} disabled={!form.date}>
+                <option value="">{form.date ? 'Select slot' : 'Pick a date first'}</option>
+                {availableSlots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
               </select>
+              {form.date && availableSlots.length === 0 && (
+                <p style={{ fontSize: 12, color: 'var(--error-600)', marginTop: 4 }}>No slots left for this date — try another day.</p>
+              )}
             </div>
           </div>
           <div>

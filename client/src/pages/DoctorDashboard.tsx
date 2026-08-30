@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ShieldPlus, LogOut, Calendar, Clock, Video as VideoIcon, Phone, MessageSquare, Stethoscope, PhoneIncoming, TrendingUp, Settings as SettingsIcon, BookOpen, Plus, Trash2 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useAuth } from '../lib/auth'
@@ -15,6 +16,7 @@ const emptyEndCallForm = { prescription: '', follow_up: false }
 
 export default function DoctorDashboard() {
   const { profile, signOut } = useAuth()
+  const navigate = useNavigate()
   const [tab, setTab] = useState<'overview' | 'library' | 'settings'>('overview')
   const [linkedDoctor, setLinkedDoctor] = useState<Doctor | null | undefined>(undefined)
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -161,7 +163,12 @@ export default function DoctorDashboard() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <header style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
+          role="button"
+          onClick={() => navigate('/home')}
+          title="Go to MediCare+ home page"
+          style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: 'none', border: 'none' }}
+        >
           {linkedDoctor ? (
             <DoctorAvatar doc={linkedDoctor} size={36} />
           ) : (

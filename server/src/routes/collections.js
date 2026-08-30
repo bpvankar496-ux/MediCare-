@@ -2,6 +2,7 @@ import { Router } from 'express'
 import mongoose from 'mongoose'
 import { registry, readOnlyViaGenericApi } from '../models/registry.js'
 import { requireAuth, attachRole } from '../middleware/auth.js'
+import { sendMail, appointmentConfirmationEmail, consultationConfirmationEmail } from '../lib/mailer.js'
 
 const router = Router()
 
@@ -37,7 +38,7 @@ const PATIENT_SCOPED_COLLECTIONS = new Set(['appointments', 'consultations'])
 // patients) can still read it.
 const STAFF_ONLY_WRITE_COLLECTIONS = new Set(['articles'])
 
-function escapeRegex(str) {
+export function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
@@ -128,6 +129,41 @@ function scopeCreatePayload(doc, req) {
   return doc
 }
 
+// New feature: email the patient a confirmation when they book an
+// appointment or a consultation. No-ops quietly if SMTP isn't configured
+// (see server/src/lib/mailer.js) and never blocks/fails the API response.
+async function notifyBooking(collectionName, doc, req) {
+  try {
+    const patientId = doc.patient_id || (req.userRole === 'patient' ? req.userId : null)
+    if (!patientId) return
+    const profile = await registry.profiles.findById(patientId)
+    if (!profile?.email) return
+
+    if (collectionName === 'appointments') {
+      const doctor = doc.doctor_id ? await registry.doctors.findById(doc.doctor_id) : null
+      const { subject, html } = appointmentConfirmationEmail({
+        patientName: doc.patient_name,
+        doctorName: doctor?.name || 'your doctor',
+        date: doc.date,
+        timeSlot: doc.time_slot,
+        type: doc.type,
+      })
+      await sendMail({ to: profile.email, subject, html })
+    } else if (collectionName === 'consultations') {
+      const { subject, html } = consultationConfirmationEmail({
+        patientName: doc.patient_name,
+        doctorName: doc.doctor_name,
+        date: doc.date,
+        timeSlot: doc.time_slot,
+        mode: doc.mode,
+      })
+      await sendMail({ to: profile.email, subject, html })
+    }
+  } catch (err) {
+    console.error('notifyBooking failed (continuing anyway):', err.message)
+  }
+}
+
 router.param('collection', (req, res, next, collection) => {
   const Model = registry[collection]
   if (!Model) {
@@ -172,6 +208,9 @@ router.post('/:collection', async (req, res) => {
     const created = await req.Model.create(scopeCreatePayload(payload, req))
     if (req.collectionName === 'reviews') {
       await recomputeDoctorRating(created.doctor_id)
+    }
+    if (req.collectionName === 'appointments' || req.collectionName === 'consultations') {
+      notifyBooking(req.collectionName, created.toJSON(), req) // fire-and-forget
     }
     return res.status(201).json(created.toJSON())
   } catch (err) {

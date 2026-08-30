@@ -1,0 +1,25 @@
+{
+  "name": "MediCare+ — Your Complete Healthcare Hub",
+  "short_name": "MediCare+",
+  "description": "Book doctors, order medicines, run lab tests, track vitals, and get telemedicine consultations — all in one healthcare app.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f9fafb",
+  "theme_color": "#0d8a7c",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

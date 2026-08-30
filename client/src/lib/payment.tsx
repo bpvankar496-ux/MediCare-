@@ -13,7 +13,7 @@ interface PaymentPanelProps {
 // No real payment gateway is called and no money moves. To accept real
 // payments, integrate a gateway like Razorpay or Stripe here (their test
 // mode keys work great as a drop-in replacement for this component).
-function luhnValid(num: string): boolean {
+export function luhnValid(num: string): boolean {
   const digits = num.replace(/\D/g, '')
   if (digits.length < 12) return false
   let sum = 0

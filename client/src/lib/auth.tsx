@@ -13,6 +13,7 @@ export interface Profile {
   email: string
   full_name: string
   role: Role
+  avatar?: string | null
 }
 
 interface AuthContextValue {
@@ -25,6 +26,7 @@ interface AuthContextValue {
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
   updateProfile: (fullName: string) => Promise<{ error: string | null }>
+  updateAvatar: (avatarDataUrl: string | null) => Promise<{ error: string | null }>
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: string | null }>
 }
 
@@ -144,6 +146,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // New feature: upload/remove a profile picture (stored as a base64 data
+  // URL - see server/src/routes/auth.js for the size/type validation).
+  const updateAvatar = async (avatarDataUrl: string | null) => {
+    const token = getToken()
+    if (!token) return { error: 'Not signed in' }
+    try {
+      const res = await fetch(`${API_URL}/api/auth/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ avatar: avatarDataUrl }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error((data && data.error) || 'Could not update profile picture')
+      setProfile((prev) => (prev ? { ...prev, avatar: avatarDataUrl } : prev))
+      return { error: null }
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Could not update profile picture' }
+    }
+  }
+
   // New feature: let a signed-in user change their own password.
   const changePassword = async (currentPassword: string, newPassword: string) => {
     const token = getToken()
@@ -163,7 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signInWithGoogle, signOut, refreshProfile, updateProfile, changePassword }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signInWithGoogle, signOut, refreshProfile, updateProfile, updateAvatar, changePassword }}>
       {children}
     </AuthContext.Provider>
   )

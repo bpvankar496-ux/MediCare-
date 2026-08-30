@@ -6,27 +6,29 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../lib/auth'
+import { useI18n, type TranslationKey } from '../lib/i18n'
 
-const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/doctors', icon: Stethoscope, label: 'Find Doctors' },
-  { to: '/consultations', icon: Video, label: 'Telemedicine' },
-  { to: '/pharmacy', icon: Pill, label: 'Pharmacy' },
-  { to: '/lab-tests', icon: FlaskConical, label: 'Lab Tests' },
-  { to: '/records', icon: FileText, label: 'Health Records' },
-  { to: '/vitals', icon: Activity, label: 'Vitals Tracker' },
-  { to: '/reminders', icon: BellRing, label: 'Reminders' },
-  { to: '/symptom-checker', icon: HeartPulse, label: 'Symptom Checker' },
-  { to: '/calculators', icon: Calculator, label: 'Health Tools' },
-  { to: '/emergency', icon: MapPin, label: 'Emergency' },
-  { to: '/articles', icon: BookOpen, label: 'Health Library' },
-  { to: '/family', icon: Users, label: 'Family Members' },
-  { to: '/inquiries', icon: HeartHandshake, label: 'Ask Reception' },
+const navItems: { to: string; icon: typeof LayoutDashboard; labelKey: TranslationKey }[] = [
+  { to: '/', icon: LayoutDashboard, labelKey: 'nav_dashboard' },
+  { to: '/doctors', icon: Stethoscope, labelKey: 'nav_doctors' },
+  { to: '/consultations', icon: Video, labelKey: 'nav_consultations' },
+  { to: '/pharmacy', icon: Pill, labelKey: 'nav_pharmacy' },
+  { to: '/lab-tests', icon: FlaskConical, labelKey: 'nav_lab_tests' },
+  { to: '/records', icon: FileText, labelKey: 'nav_records' },
+  { to: '/vitals', icon: Activity, labelKey: 'nav_vitals' },
+  { to: '/reminders', icon: BellRing, labelKey: 'nav_reminders' },
+  { to: '/symptom-checker', icon: HeartPulse, labelKey: 'nav_symptom_checker' },
+  { to: '/calculators', icon: Calculator, labelKey: 'nav_calculators' },
+  { to: '/emergency', icon: MapPin, labelKey: 'nav_emergency' },
+  { to: '/articles', icon: BookOpen, labelKey: 'nav_articles' },
+  { to: '/family', icon: Users, labelKey: 'nav_family' },
+  { to: '/inquiries', icon: HeartHandshake, labelKey: 'nav_inquiries' },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { user, profile, signOut } = useAuth()
+  const { t } = useI18n()
   const displayName = profile?.full_name?.trim() || user?.email || 'User Account'
 
   return (
@@ -50,8 +52,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`}
       >
         <Link
-          to="/"
+          to="/home"
           onClick={() => setMobileOpen(false)}
+          title="Go to MediCare+ home page"
           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 20px', textDecoration: 'none' }}
         >
           <div style={{
@@ -90,7 +93,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }}
             >
               <item.icon size={18} />
-              {item.label}
+              {t(item.labelKey)}
             </NavLink>
           ))}
         </nav>
@@ -98,18 +101,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div style={{ padding: 16, borderTop: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 8 }}>
             <div style={{
-              width: 36, height: 36, borderRadius: '50%',
+              width: 36, height: 36, borderRadius: '50%', overflow: 'hidden',
               background: 'var(--primary-100)', display: 'grid', placeItems: 'center',
               fontSize: 14, fontWeight: 700, color: 'var(--primary-700)', flexShrink: 0,
-            }}>{displayName[0].toUpperCase()}</div>
+            }}>
+              {profile?.avatar
+                ? <img src={profile.avatar} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : displayName[0].toUpperCase()}
+            </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-h)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Free Plan</div>
             </div>
-            <Link to="/settings" onClick={() => setMobileOpen(false)} title="Settings" style={{ display: 'inline-flex', background: 'none', border: 'none', padding: 6, color: 'var(--text-muted)', flexShrink: 0 }}>
+            <Link to="/settings" onClick={() => setMobileOpen(false)} title={t('nav_settings')} style={{ display: 'inline-flex', background: 'none', border: 'none', padding: 6, color: 'var(--text-muted)', flexShrink: 0 }}>
               <SettingsIcon size={18} />
             </Link>
-            <button onClick={signOut} title="Sign out" style={{ background: 'none', border: 'none', padding: 6, color: 'var(--text-muted)', flexShrink: 0 }}>
+            <button onClick={signOut} title={t('nav_sign_out')} style={{ background: 'none', border: 'none', padding: 6, color: 'var(--text-muted)', flexShrink: 0 }}>
               <LogOut size={18} />
             </button>
           </div>
@@ -137,7 +144,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+          <Link to="/home" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
             <ShieldPlus color="var(--primary-500)" size={22} />
             <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-h)' }}>MediCare+</span>
           </Link>

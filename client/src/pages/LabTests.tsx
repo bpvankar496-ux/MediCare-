@@ -1,14 +1,17 @@
 import { useState, useMemo } from 'react'
-import { FlaskConical, Search, Plus, Minus, CircleCheck as CheckCircle, Droplet, Clock, Calendar, Hop as Home } from 'lucide-react'
+import { FlaskConical, Search, Plus, Minus, CircleCheck as CheckCircle, Droplet, Clock, Calendar, Hop as Home, FileDown } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal } from '../lib/ui'
 import { PaymentPanel, PayingButton, type PaymentMethod } from '../lib/payment'
 import { useToast } from '../lib/toast'
 import { db } from '../lib/db'
+import { downloadInvoicePdf } from '../lib/pdf'
+import { useAuth } from '../lib/auth'
 import type { LabTest, LabTestBooking } from '../lib/types'
 
 export default function LabTests() {
   const { data: tests, loading, error } = useSupabaseQuery<LabTest>('lab_tests')
   const { data: bookings, refetch: refetchBookings } = useSupabaseQuery<LabTestBooking>('lab_test_bookings', '*', 'created_at', false)
+  const { profile } = useAuth()
   const { showToast } = useToast()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -138,6 +141,21 @@ export default function LabTests() {
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{b.date} {b.home_collection && '· Home Collection'}</div>
                 </div>
                 <span className="badge badge-info">{b.status}</span>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => downloadInvoicePdf({
+                    invoiceNumber: `LAB${String(b.id).slice(-8).toUpperCase()}`,
+                    date: new Date(b.created_at).toLocaleDateString(),
+                    billedTo: profile?.full_name || profile?.email || b.patient_name,
+                    items: b.test_ids.map((t) => ({ name: t.name, price: t.price, quantity: 1 })),
+                    total: b.total,
+                    paymentMethod: b.payment_method,
+                    status: b.status,
+                    address: b.home_collection ? b.address : null,
+                  })}
+                >
+                  <FileDown size={14} /> Invoice
+                </button>
               </div>
             ))}
           </div>

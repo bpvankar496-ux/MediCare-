@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Video, CircleCheck as CheckCircle, Video as VideoIcon, Phone, MessageSquare, Clock, Calendar, PhoneIncoming } from 'lucide-react'
+import { Video, CircleCheck as CheckCircle, Video as VideoIcon, Phone, MessageSquare, Clock, Calendar, PhoneIncoming, FileDown } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, Modal, EmptyState } from '../lib/ui'
 import { db } from '../lib/db'
 import { VideoCall } from '../lib/VideoCall'
 import { ChatOnly } from '../lib/ChatOnly'
 import { useAuth } from '../lib/auth'
 import { useIncomingCallInvites, sendCallInvite, useNotificationPermission } from '../lib/callInvites'
+import { downloadPrescriptionPdf } from '../lib/pdf'
 import type { Consultation, Doctor } from '../lib/types'
 
 export default function Consultations() {
@@ -130,7 +131,28 @@ export default function Consultations() {
                   </div>
                   <span className="badge badge-success">Completed</span>
                 </div>
-                {c.prescription && <div style={{ marginTop: 10, padding: 12, background: 'var(--neutral-50)', borderRadius: 'var(--radius-sm)', fontSize: 13 }}><strong>Prescription:</strong> {c.prescription}</div>}
+                {c.prescription && (
+                  <div style={{ marginTop: 10, padding: 12, background: 'var(--neutral-50)', borderRadius: 'var(--radius-sm)', fontSize: 13 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                      <div><strong>Prescription:</strong> {c.prescription}</div>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        style={{ flexShrink: 0 }}
+                        onClick={() => downloadPrescriptionPdf({
+                          doctorName: c.doctor_name,
+                          patientName: c.patient_name,
+                          date: c.date,
+                          timeSlot: c.time_slot,
+                          symptoms: c.symptoms,
+                          prescription: c.prescription!,
+                          followUp: c.follow_up,
+                        })}
+                      >
+                        <FileDown size={14} /> PDF
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {c.follow_up && <div style={{ marginTop: 8, fontSize: 13, color: 'var(--warning-600)' }}><CheckCircle size={14} style={{ display: 'inline', marginRight: 4 }} />Follow-up recommended</div>}
               </div>
             ))}

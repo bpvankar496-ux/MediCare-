@@ -30,7 +30,7 @@ const authLimiter = rateLimit({
 
 // Bug fix: the only password rule was "6+ characters", so "123456" or
 // "aaaaaa" were accepted. Now requires at least one letter and one number too.
-function isStrongPassword(password) {
+export function isStrongPassword(password) {
   return (
     typeof password === 'string' &&
     password.length >= 8 &&
@@ -138,20 +138,48 @@ router.get('/me', requireAuth, async (req, res) => {
   }
 })
 
+// Roughly caps a base64 data URL to ~1.5MB of actual image bytes, so a
+// patient can't stuff an oversized image into every profile document.
+const MAX_AVATAR_BYTES = 1.5 * 1024 * 1024
+function isValidAvatarDataUrl(value) {
+  if (typeof value !== 'string') return false
+  const match = /^data:image\/(png|jpe?g|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(value)
+  if (!match) return false
+  const approxBytes = (match[2].length * 3) / 4
+  return approxBytes <= MAX_AVATAR_BYTES
+}
+
 // PATCH /api/auth/profile - new feature: lets a logged-in user update their
-// own display name without going through the (now owner-locked) generic
-// /api/profiles route.
+// own display name and/or profile picture without going through the (now
+// owner-locked) generic /api/profiles route. Either field is optional so
+// the client can save name and avatar independently or together.
 router.patch('/profile', requireAuth, async (req, res) => {
   try {
-    const { full_name } = req.body || {}
-    if (typeof full_name !== 'string' || !full_name.trim()) {
-      return res.status(400).json({ error: 'full_name is required' })
+    const { full_name, avatar } = req.body || {}
+    const update = {}
+
+    if (full_name !== undefined) {
+      if (typeof full_name !== 'string' || !full_name.trim()) {
+        return res.status(400).json({ error: 'full_name cannot be empty' })
+      }
+      update.full_name = full_name.trim()
     }
-    const profile = await Profile.findByIdAndUpdate(
-      req.userId,
-      { full_name: full_name.trim() },
-      { new: true },
-    )
+
+    if (avatar !== undefined) {
+      if (avatar === null) {
+        update.avatar = null // explicit removal
+      } else if (!isValidAvatarDataUrl(avatar)) {
+        return res.status(400).json({ error: 'Avatar must be a PNG/JPEG/WEBP/GIF image under 1.5MB' })
+      } else {
+        update.avatar = avatar
+      }
+    }
+
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ error: 'Nothing to update' })
+    }
+
+    const profile = await Profile.findByIdAndUpdate(req.userId, update, { new: true })
     if (!profile) return res.status(404).json({ error: 'Profile not found' })
     return res.json(profile.toJSON())
   } catch (err) {

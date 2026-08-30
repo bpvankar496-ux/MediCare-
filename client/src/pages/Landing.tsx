@@ -1,8 +1,9 @@
 import {
   ShieldPlus, Stethoscope, Pill, FlaskConical, Video, Activity, HeartPulse,
-  Users, BookOpen, Star, ArrowRight, CheckCircle2, Menu, X,
+  Users, BookOpen, Star, ArrowRight, CheckCircle2, Menu, X, LayoutDashboard,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useI18n } from '../lib/i18n'
 
 const features = [
   { icon: Stethoscope, title: 'Find & Book Doctors', desc: 'Search specialists by city or specialty and book an appointment in seconds.', color: 'var(--primary-500)', bg: 'var(--primary-50)' },
@@ -28,8 +29,17 @@ const testimonials = [
   { name: 'Dr. Sneha Reddy', role: 'Psychiatrist', quote: 'The telemedicine dashboard makes it painless to manage a full day of video consultations.', rating: 4.5 },
 ]
 
-export default function Landing({ onGetStarted }: { onGetStarted: () => void }) {
+interface LandingProps {
+  onGetStarted: () => void
+  // When true, this is being viewed by an already-authenticated user (they
+  // clicked the MediCare+ logo from inside the app) - swap "Sign In / Get
+  // Started" for a single "Go to Dashboard" action instead.
+  loggedIn?: boolean
+}
+
+export default function Landing({ onGetStarted, loggedIn = false }: LandingProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const { t } = useI18n()
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
@@ -52,8 +62,14 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
           <nav className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
             <a href="#features" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>Features</a>
             <a href="#testimonials" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>Testimonials</a>
-            <button className="btn btn-ghost btn-sm" onClick={onGetStarted}>Sign In</button>
-            <button className="btn btn-primary" onClick={onGetStarted}>Get Started</button>
+            {loggedIn ? (
+              <button className="btn btn-primary" onClick={onGetStarted}><LayoutDashboard size={16} /> {t('landing_go_to_dashboard')}</button>
+            ) : (
+              <>
+                <button className="btn btn-ghost btn-sm" onClick={onGetStarted}>{t('landing_sign_in')}</button>
+                <button className="btn btn-primary" onClick={onGetStarted}>{t('landing_get_started')}</button>
+              </>
+            )}
           </nav>
 
           <button
@@ -70,8 +86,14 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
           <div style={{ padding: '0 24px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             <a href="#features" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>Features</a>
             <a href="#testimonials" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>Testimonials</a>
-            <button className="btn btn-secondary" onClick={onGetStarted}>Sign In</button>
-            <button className="btn btn-primary" onClick={onGetStarted}>Get Started</button>
+            {loggedIn ? (
+              <button className="btn btn-primary" onClick={onGetStarted}>{t('landing_go_to_dashboard')}</button>
+            ) : (
+              <>
+                <button className="btn btn-secondary" onClick={onGetStarted}>{t('landing_sign_in')}</button>
+                <button className="btn btn-primary" onClick={onGetStarted}>{t('landing_get_started')}</button>
+              </>
+            )}
           </div>
         )}
       </header>
@@ -80,21 +102,25 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '72px 24px 48px', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 48, alignItems: 'center' }} className="dashboard-grid">
         <div className="fade-in">
           <span className="badge badge-info" style={{ marginBottom: 20 }}>
-            <HeartPulse size={13} /> Trusted healthcare platform
+            <HeartPulse size={13} /> {t('landing_badge')}
           </span>
           <h1 style={{ fontSize: 46, lineHeight: 1.1, marginBottom: 20, letterSpacing: -1 }}>
-            Your Health, <span style={{ color: 'var(--primary-500)' }}>One Click</span> Away
+            {t('landing_title_1')} <span style={{ color: 'var(--primary-500)' }}>{t('landing_title_2')}</span> {t('landing_title_3')}
           </h1>
           <p style={{ fontSize: 17, color: 'var(--text-muted)', maxWidth: 480, marginBottom: 28, lineHeight: 1.6 }}>
-            Book doctors, order medicines, run lab tests, and get instant telemedicine
-            consultations — MediCare+ brings your entire healthcare journey into one
-            simple, secure app.
+            {t('landing_subtitle')}
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 28 }}>
-            <button className="btn btn-primary btn-lg" onClick={onGetStarted}>
-              <Stethoscope size={18} /> Get Started Free <ArrowRight size={16} />
-            </button>
-            <a href="#features" className="btn btn-secondary btn-lg">See Features</a>
+            {loggedIn ? (
+              <button className="btn btn-primary btn-lg" onClick={onGetStarted}>
+                <LayoutDashboard size={18} /> {t('landing_go_to_dashboard')} <ArrowRight size={16} />
+              </button>
+            ) : (
+              <button className="btn btn-primary btn-lg" onClick={onGetStarted}>
+                <Stethoscope size={18} /> {t('landing_get_started')} <ArrowRight size={16} />
+              </button>
+            )}
+            <a href="#features" className="btn btn-secondary btn-lg">{t('landing_see_features')}</a>
           </div>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             {['No credit card needed', 'Free for patients', 'Setup in 2 minutes'].map((t) => (
@@ -216,10 +242,14 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
           padding: '48px 40px', textAlign: 'center', border: 'none',
           background: 'linear-gradient(135deg, var(--primary-500), var(--primary-700))',
         }}>
-          <h2 style={{ color: 'white', fontSize: 28, marginBottom: 10 }}>Ready to take control of your health?</h2>
-          <p style={{ color: 'rgba(255,255,255,0.9)', marginBottom: 24 }}>Join thousands of patients and doctors already using MediCare+.</p>
+          <h2 style={{ color: 'white', fontSize: 28, marginBottom: 10 }}>
+            {loggedIn ? 'Ready to jump back in?' : 'Ready to take control of your health?'}
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.9)', marginBottom: 24 }}>
+            {loggedIn ? 'Your dashboard is right where you left it.' : 'Join thousands of patients and doctors already using MediCare+.'}
+          </p>
           <button className="btn btn-lg" style={{ background: 'white', color: 'var(--primary-700)' }} onClick={onGetStarted}>
-            Create Your Free Account <ArrowRight size={16} />
+            {loggedIn ? t('landing_go_to_dashboard') : 'Create Your Free Account'} <ArrowRight size={16} />
           </button>
         </div>
       </section>

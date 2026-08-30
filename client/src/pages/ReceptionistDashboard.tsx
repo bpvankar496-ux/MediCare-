@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ShieldPlus, LogOut, HeartHandshake, Link2, MessageCircle, CircleCheck as CheckCircle, UserPlus, BarChart3, Trash2, Settings as SettingsIcon } from 'lucide-react'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts'
 import { useAuth } from '../lib/auth'
@@ -29,6 +30,7 @@ const emptyDoctorForm = { profile_id: '', specialty: '', qualification: '', expe
 
 export default function ReceptionistDashboard() {
   const { profile, signOut } = useAuth()
+  const navigate = useNavigate()
   const [tab, setTab] = useState<'inquiries' | 'doctors' | 'analytics' | 'settings'>('inquiries')
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [doctorProfiles, setDoctorProfiles] = useState<ProfileRow[]>([])
@@ -123,7 +125,12 @@ export default function ReceptionistDashboard() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <header style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
+          role="button"
+          onClick={() => navigate('/home')}
+          title="Go to MediCare+ home page"
+          style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: 'none', border: 'none' }}
+        >
           <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--primary-500)', display: 'grid', placeItems: 'center' }}>
             <ShieldPlus color="white" size={20} />
           </div>
