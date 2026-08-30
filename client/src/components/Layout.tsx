@@ -26,7 +26,8 @@ const navItems = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const { user, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth()
+  const displayName = profile?.full_name?.trim() || user?.email || 'User Account'
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -100,9 +101,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               width: 36, height: 36, borderRadius: '50%',
               background: 'var(--primary-100)', display: 'grid', placeItems: 'center',
               fontSize: 14, fontWeight: 700, color: 'var(--primary-700)', flexShrink: 0,
-            }}>{(user?.email || 'U')[0].toUpperCase()}</div>
+            }}>{displayName[0].toUpperCase()}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-h)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email || 'User Account'}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-h)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Free Plan</div>
             </div>
             <Link to="/settings" onClick={() => setMobileOpen(false)} title="Settings" style={{ display: 'inline-flex', background: 'none', border: 'none', padding: 6, color: 'var(--text-muted)', flexShrink: 0 }}>

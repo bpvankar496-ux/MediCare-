@@ -21,6 +21,7 @@ interface AuthContextValue {
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signUp: (email: string, password: string, fullName: string, role: Role) => Promise<{ error: string | null }>
+  signInWithGoogle: (credential: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
   updateProfile: (fullName: string) => Promise<{ error: string | null }>
@@ -100,6 +101,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // New feature: "Sign in with Google". `credential` is the ID token Google
+  // Identity Services hands back to the button's callback (see Login.tsx).
+  const signInWithGoogle = async (credential: string) => {
+    try {
+      const data = await apiRequest('/api/auth/google', { credential })
+      setToken(data.token)
+      setUser(data.user)
+      setProfile(data.profile)
+      return { error: null }
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Could not sign in with Google' }
+    }
+  }
+
   const signOut = async () => {
     setToken(null)
     setUser(null)
@@ -148,7 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut, refreshProfile, updateProfile, changePassword }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signInWithGoogle, signOut, refreshProfile, updateProfile, changePassword }}>
       {children}
     </AuthContext.Provider>
   )

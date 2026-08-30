@@ -35,7 +35,10 @@ export default function Emergency() {
           </div>
           <div>
             <h3 style={{ color: 'var(--error-600)' }}>Emergency Hotline</h3>
-            <p style={{ fontSize: 14, color: 'var(--error-600)' }}>Call 108 for ambulance. Call 112 for general emergency.</p>
+            <p style={{ fontSize: 14, color: 'var(--error-600)' }}>
+              Call <a href="tel:108" style={{ color: 'var(--error-700)', fontWeight: 700, textDecoration: 'underline' }}>108</a> for ambulance.
+              Call <a href="tel:112" style={{ color: 'var(--error-700)', fontWeight: 700, textDecoration: 'underline' }}>112</a> for general emergency.
+            </p>
           </div>
         </div>
       </div>
@@ -67,7 +70,7 @@ export default function Emergency() {
               </span>
             </div>
             {h.address && <p style={{ fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'flex-start', gap: 6 }}><MapPin size={14} color="var(--text-muted)" style={{ marginTop: 2, flexShrink: 0 }} /> {h.address}, {h.city}</p>}
-            {h.phone && <p style={{ fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}><Phone size={14} color="var(--text-muted)" /> {h.phone}</p>}
+            {h.phone && <p style={{ fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}><Phone size={14} color="var(--text-muted)" /> <a href={`tel:${h.phone.replace(/[^+\d]/g, '')}`} style={{ color: 'var(--primary-600)', fontWeight: 600 }}>{h.phone}</a></p>}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {h.emergency && <span className="badge badge-error">Emergency</span>}
               {h.open_24x7 && <span className="badge badge-success"><Clock size={11} /> 24x7</span>}

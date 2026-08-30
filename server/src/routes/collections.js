@@ -30,8 +30,37 @@ const OWNED_COLLECTIONS = new Set([
 // is their job.
 const PATIENT_SCOPED_COLLECTIONS = new Set(['appointments', 'consultations'])
 
+// Bug fix: previously ANY logged-in user (including patients) could POST/
+// PATCH/DELETE directly against /api/articles, so the "Health Library" had
+// no real access control even though only doctors were meant to publish to
+// it. Only doctor/receptionist accounts may write; everyone (including
+// patients) can still read it.
+const STAFF_ONLY_WRITE_COLLECTIONS = new Set(['articles'])
+
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// New feature: doctors' `rating`/`reviews_count` used to be fixed numbers
+// set once at signup and never updated. Now, any time a review is
+// added/removed for a doctor, we recompute both fields as the live
+// average/count over that doctor's `reviews` documents.
+async function recomputeDoctorRating(doctorId) {
+  if (!doctorId) return
+  const Review = registry.reviews
+  const Doctor = registry.doctors
+  const stats = await Review.aggregate([
+    { $match: { doctor_id: new mongoose.Types.ObjectId(String(doctorId)) } },
+    { $group: { _id: '$doctor_id', avg: { $avg: '$rating' }, count: { $sum: 1 } } },
+  ])
+  if (stats.length === 0) {
+    // No reviews left - leave rating as-is (don't wipe out a doctor's
+    // rating just because the last review was deleted) but zero the count.
+    await Doctor.findByIdAndUpdate(doctorId, { reviews_count: 0 })
+    return
+  }
+  const { avg, count } = stats[0]
+  await Doctor.findByIdAndUpdate(doctorId, { rating: Math.round(avg * 10) / 10, reviews_count: count })
 }
 
 // Turns query-string filters into a Mongo filter object.
@@ -131,6 +160,9 @@ router.post('/:collection', async (req, res) => {
     if (readOnlyViaGenericApi.has(req.collectionName)) {
       return res.status(403).json({ error: 'This collection is managed automatically and cannot be inserted into directly' })
     }
+    if (STAFF_ONLY_WRITE_COLLECTIONS.has(req.collectionName) && !['doctor', 'receptionist'].includes(req.userRole)) {
+      return res.status(403).json({ error: 'Only doctors can publish to the Health Library' })
+    }
     const payload = req.body
     if (Array.isArray(payload)) {
       const scoped = payload.map((doc) => scopeCreatePayload(doc, req))
@@ -138,6 +170,9 @@ router.post('/:collection', async (req, res) => {
       return res.status(201).json(created.map((d) => d.toJSON()))
     }
     const created = await req.Model.create(scopeCreatePayload(payload, req))
+    if (req.collectionName === 'reviews') {
+      await recomputeDoctorRating(created.doctor_id)
+    }
     return res.status(201).json(created.toJSON())
   } catch (err) {
     console.error('insert error', err)
@@ -153,6 +188,9 @@ router.patch('/:collection', async (req, res) => {
   try {
     if (readOnlyViaGenericApi.has(req.collectionName)) {
       return res.status(403).json({ error: 'This collection is managed automatically and cannot be updated directly' })
+    }
+    if (STAFF_ONLY_WRITE_COLLECTIONS.has(req.collectionName) && !['doctor', 'receptionist'].includes(req.userRole)) {
+      return res.status(403).json({ error: 'Only doctors can edit the Health Library' })
     }
     const filter = scopeFilter(buildFilter(req.query), req)
     // Never let an update reassign a row to a different owner.
@@ -172,8 +210,18 @@ router.delete('/:collection', async (req, res) => {
     if (readOnlyViaGenericApi.has(req.collectionName)) {
       return res.status(403).json({ error: 'This collection is managed automatically and cannot be deleted from directly' })
     }
+    if (STAFF_ONLY_WRITE_COLLECTIONS.has(req.collectionName) && !['doctor', 'receptionist'].includes(req.userRole)) {
+      return res.status(403).json({ error: 'Only doctors can remove Health Library articles' })
+    }
     const filter = scopeFilter(buildFilter(req.query), req)
+    let affectedDoctorIds = []
+    if (req.collectionName === 'reviews') {
+      affectedDoctorIds = (await req.Model.find(filter).select('doctor_id')).map((r) => r.doctor_id)
+    }
     const result = await req.Model.deleteMany(filter)
+    if (affectedDoctorIds.length > 0) {
+      await Promise.all([...new Set(affectedDoctorIds.map(String))].map((id) => recomputeDoctorRating(id)))
+    }
     res.json({ deletedCount: result.deletedCount })
   } catch (err) {
     console.error('delete error', err)

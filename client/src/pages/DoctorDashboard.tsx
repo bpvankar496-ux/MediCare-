@@ -1,21 +1,34 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ShieldPlus, LogOut, Calendar, Clock, Video as VideoIcon, Phone, MessageSquare, Stethoscope, PhoneIncoming, TrendingUp } from 'lucide-react'
+import { ShieldPlus, LogOut, Calendar, Clock, Video as VideoIcon, Phone, MessageSquare, Stethoscope, PhoneIncoming, TrendingUp, Settings as SettingsIcon, BookOpen, Plus, Trash2 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useAuth } from '../lib/auth'
 import { db } from '../lib/db'
 import { VideoCall } from '../lib/VideoCall'
 import { ChatOnly } from '../lib/ChatOnly'
 import { LoadingState, EmptyState, Modal, DoctorAvatar } from '../lib/ui'
+import Settings from './Settings'
 import { useIncomingCallInvites, sendCallInvite, useNotificationPermission } from '../lib/callInvites'
-import type { Appointment, Consultation, Doctor } from '../lib/types'
+import type { Appointment, Consultation, Doctor, Article } from '../lib/types'
+
+const emptyArticleForm = { title: '', category: '', excerpt: '', content: '', read_time: '' }
+const emptyEndCallForm = { prescription: '', follow_up: false }
 
 export default function DoctorDashboard() {
   const { profile, signOut } = useAuth()
+  const [tab, setTab] = useState<'overview' | 'library' | 'settings'>('overview')
   const [linkedDoctor, setLinkedDoctor] = useState<Doctor | null | undefined>(undefined)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [consultations, setConsultations] = useState<Consultation[]>([])
+  const [articles, setArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
   const [activeCall, setActiveCall] = useState<Consultation | null>(null)
+  const [endCallTarget, setEndCallTarget] = useState<Consultation | null>(null)
+  const [endCallForm, setEndCallForm] = useState(emptyEndCallForm)
+  const [endingCall, setEndingCall] = useState(false)
+  const [articleModalOpen, setArticleModalOpen] = useState(false)
+  const [articleForm, setArticleForm] = useState(emptyArticleForm)
+  const [savingArticle, setSavingArticle] = useState(false)
+  const [articleError, setArticleError] = useState<string | null>(null)
   const myName = profile?.full_name || profile?.email || 'Doctor'
   const scheduledIds = consultations.filter((c) => c.status === 'scheduled').map((c) => c.id)
   const { incoming, dismiss } = useIncomingCallInvites(scheduledIds, myName)
@@ -30,6 +43,66 @@ export default function DoctorDashboard() {
   const updateApptStatus = async (id: string, status: string) => {
     setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)))
     await db.from('appointments').update({ status }).eq('id', id)
+  }
+
+  const reloadConsultations = async () => {
+    const { data: cons } = await db.from('consultations').select('*').order('created_at', { ascending: false })
+    const allConsultations = (cons as Consultation[]) || []
+    const byName = allConsultations.filter((c) => c.doctor_name.trim().toLowerCase() === (profile?.full_name || '').trim().toLowerCase())
+    setConsultations(byName.length > 0 ? byName : allConsultations)
+  }
+
+  const reloadArticles = async () => {
+    const { data: arts } = await db.from('articles').select('*').order('published_at', { ascending: false })
+    setArticles((arts as Article[]) || [])
+  }
+
+  // New feature: previously a doctor had no way to end a telemedicine
+  // consultation, so it stayed "scheduled" forever and either side could
+  // rejoin the same call any number of times. This marks it "completed"
+  // with the doctor's advice/prescription attached, which also makes the
+  // "Join Now" button disappear for both the doctor and the patient.
+  const submitEndCall = async () => {
+    if (!endCallTarget) return
+    setEndingCall(true)
+    await db.from('consultations').update({
+      status: 'completed',
+      prescription: endCallForm.prescription.trim() || null,
+      follow_up: endCallForm.follow_up,
+    }).eq('id', endCallTarget.id)
+    setEndingCall(false)
+    setEndCallTarget(null)
+    setEndCallForm(emptyEndCallForm)
+    setActiveCall(null)
+    reloadConsultations()
+  }
+
+  const addArticle = async () => {
+    if (!articleForm.title.trim() || !articleForm.category.trim() || !articleForm.excerpt.trim() || !articleForm.content.trim()) {
+      setArticleError('Title, category, excerpt, and content are required')
+      return
+    }
+    setSavingArticle(true)
+    setArticleError(null)
+    const { error } = await db.from('articles').insert({
+      title: articleForm.title.trim(),
+      category: articleForm.category.trim(),
+      excerpt: articleForm.excerpt.trim(),
+      content: articleForm.content.trim(),
+      read_time: articleForm.read_time.trim() || null,
+      author: myName,
+    })
+    setSavingArticle(false)
+    if (error) { setArticleError(error.message); return }
+    setArticleForm(emptyArticleForm)
+    setArticleModalOpen(false)
+    reloadArticles()
+  }
+
+  const deleteArticle = async (id: string, title: string) => {
+    if (!window.confirm(`Delete "${title}" from the Health Library? This cannot be undone.`)) return
+    await db.from('articles').delete().eq('id', id)
+    reloadArticles()
   }
 
   useEffect(() => {
@@ -54,6 +127,9 @@ export default function DoctorDashboard() {
       const allConsultations = (cons as Consultation[]) || []
       const byName = allConsultations.filter((c) => c.doctor_name.trim().toLowerCase() === (profile!.full_name || '').trim().toLowerCase())
       if (!cancelled) setConsultations(byName.length > 0 ? byName : allConsultations)
+
+      const { data: arts } = await db.from('articles').select('*').order('published_at', { ascending: false })
+      if (!cancelled) setArticles((arts as Article[]) || [])
 
       if (!cancelled) setLoading(false)
     }
@@ -102,6 +178,50 @@ export default function DoctorDashboard() {
       </header>
 
       <main style={{ padding: '28px 24px', maxWidth: 1000, margin: '0 auto' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          <button className={`btn btn-sm ${tab === 'overview' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('overview')}>
+            <Calendar size={15} /> Overview
+          </button>
+          <button className={`btn btn-sm ${tab === 'library' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('library')}>
+            <BookOpen size={15} /> Health Library
+          </button>
+          <button className={`btn btn-sm ${tab === 'settings' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('settings')}>
+            <SettingsIcon size={15} /> Settings
+          </button>
+        </div>
+
+        {tab === 'settings' ? (
+          <Settings />
+        ) : tab === 'library' ? (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+              <p style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 560 }}>
+                Articles you publish here appear in every patient's Health Library.
+              </p>
+              <button className="btn btn-primary btn-sm" onClick={() => { setArticleForm(emptyArticleForm); setArticleError(null); setArticleModalOpen(true) }}>
+                <Plus size={15} /> Add Article
+              </button>
+            </div>
+            {articles.length === 0 ? (
+              <EmptyState icon={BookOpen} title="No articles yet" subtitle="Publish your first Health Library article for patients to read." />
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {articles.map((a) => (
+                  <div key={a.id} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: 150 }}>
+                      <div style={{ fontWeight: 600 }}>{a.title}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{a.category} {a.author ? `· ${a.author}` : ''}</div>
+                    </div>
+                    <button className="btn btn-ghost btn-sm" onClick={() => deleteArticle(a.id, a.title)} style={{ padding: 6 }}>
+                      <Trash2 size={16} color="var(--error-500)" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+        <>
         {incoming && (
           <div className="card fade-in" style={{ padding: 16, marginBottom: 20, background: 'var(--success-50)', border: '1px solid var(--success-100)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--success-500)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
@@ -208,13 +328,18 @@ export default function DoctorDashboard() {
                     </div>
                     <span className="badge badge-info" style={{ textTransform: 'capitalize' }}>{c.mode}</span>
                     {c.status === 'scheduled' && (
-                      <button className="btn btn-primary btn-sm" onClick={() => joinNow(c)}>Join Now</button>
+                      <>
+                        <button className="btn btn-primary btn-sm" onClick={() => joinNow(c)}>Join Now</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => { setEndCallTarget(c); setEndCallForm(emptyEndCallForm) }}>End & Add Advice</button>
+                      </>
                     )}
                   </div>
                 ))}
               </div>
             )}
           </>
+        )}
+        </>
         )}
       </main>
 
@@ -233,6 +358,55 @@ export default function DoctorDashboard() {
           <ChatOnly roomId={activeCall.id} displayName={myName} />
         </Modal>
       )}
+
+      <Modal
+        open={!!endCallTarget}
+        onClose={() => setEndCallTarget(null)}
+        title={`End consultation with ${endCallTarget?.patient_name ?? ''}`}
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setEndCallTarget(null)}>Cancel</button>
+            <button className="btn btn-primary" onClick={submitEndCall} disabled={endingCall}>{endingCall ? 'Saving...' : 'Mark Completed'}</button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            Once marked completed, this consultation moves to Past Consultations and can no longer be re-joined by either side.
+          </p>
+          <div>
+            <label className="label">Prescription / Advice</label>
+            <textarea className="input" rows={4} value={endCallForm.prescription} onChange={(e) => setEndCallForm({ ...endCallForm, prescription: e.target.value })} placeholder="Medicines, dosage, and advice for the patient" />
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer' }}>
+            <input type="checkbox" checked={endCallForm.follow_up} onChange={(e) => setEndCallForm({ ...endCallForm, follow_up: e.target.checked })} />
+            Recommend a follow-up visit
+          </label>
+        </div>
+      </Modal>
+
+      <Modal
+        open={articleModalOpen}
+        onClose={() => setArticleModalOpen(false)}
+        title="Add Health Library Article"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setArticleModalOpen(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={addArticle} disabled={savingArticle}>{savingArticle ? 'Publishing...' : 'Publish'}</button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div><label className="label">Title *</label><input className="input" value={articleForm.title} onChange={(e) => setArticleForm({ ...articleForm, title: e.target.value })} /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div><label className="label">Category *</label><input className="input" value={articleForm.category} onChange={(e) => setArticleForm({ ...articleForm, category: e.target.value })} placeholder="e.g. Nutrition" /></div>
+            <div><label className="label">Read time</label><input className="input" value={articleForm.read_time} onChange={(e) => setArticleForm({ ...articleForm, read_time: e.target.value })} placeholder="e.g. 4 min" /></div>
+          </div>
+          <div><label className="label">Excerpt *</label><textarea className="input" rows={2} value={articleForm.excerpt} onChange={(e) => setArticleForm({ ...articleForm, excerpt: e.target.value })} /></div>
+          <div><label className="label">Content *</label><textarea className="input" rows={6} value={articleForm.content} onChange={(e) => setArticleForm({ ...articleForm, content: e.target.value })} /></div>
+          {articleError && <p style={{ color: 'var(--error-600)', fontSize: 13 }}>{articleError}</p>}
+        </div>
+      </Modal>
     </div>
   )
 }

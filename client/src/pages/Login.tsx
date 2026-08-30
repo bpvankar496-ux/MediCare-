@@ -1,15 +1,69 @@
-import { useState } from 'react'
-import { ShieldPlus, Mail, Lock, User as UserIcon, CircleCheck as CheckCircle, Stethoscope, HeartHandshake, UserRound, ArrowLeft } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ShieldPlus, Mail, Lock, User as UserIcon, CircleCheck as CheckCircle, Stethoscope, UserRound, ArrowLeft } from 'lucide-react'
 import { useAuth, type Role } from '../lib/auth'
 
+// Bug fix: "Receptionist" used to be a pickable role on public signup, so
+// anyone could give themselves the reception desk. Reception is now a fixed,
+// admin-only account (see server/.env RECEPTION_EMAIL/RECEPTION_PASSWORD) -
+// the public form only ever creates patients or doctors.
 const roles: { value: Role; label: string; icon: React.ComponentType<{ size?: number; color?: string }> }[] = [
   { value: 'patient', label: 'Patient', icon: UserRound },
   { value: 'doctor', label: 'Doctor', icon: Stethoscope },
-  { value: 'receptionist', label: 'Receptionist', icon: HeartHandshake },
 ]
 
+const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) || ''
+
+// Renders Google's own "Sign in with Google" button via Google Identity
+// Services (loaded on demand - no extra npm dependency). Silently renders
+// nothing if VITE_GOOGLE_CLIENT_ID isn't configured, so the rest of the
+// login form still works without it.
+function GoogleSignInButton({ onCredential }: { onCredential: (credential: string) => void }) {
+  const divRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return
+    let cancelled = false
+
+    function render() {
+      if (cancelled || !divRef.current) return
+      const w = window as unknown as { google?: any }
+      if (!w.google) return
+      w.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (resp: { credential: string }) => onCredential(resp.credential),
+      })
+      w.google.accounts.id.renderButton(divRef.current, { theme: 'outline', size: 'large', width: 340 })
+    }
+
+    const existing = document.getElementById('google-identity-script')
+    if (existing) {
+      render()
+      return
+    }
+    const script = document.createElement('script')
+    script.id = 'google-identity-script'
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.onload = render
+    document.head.appendChild(script)
+    return () => { cancelled = true }
+  }, [onCredential])
+
+  if (!GOOGLE_CLIENT_ID) return null
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, margin: '4px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>or</span>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+      </div>
+      <div ref={divRef} />
+    </div>
+  )
+}
+
 export default function Login({ onBack }: { onBack?: () => void }) {
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, signInWithGoogle } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -33,6 +87,14 @@ export default function Login({ onBack }: { onBack?: () => void }) {
     setSubmitting(false)
     if (result.error) { setError(result.error); return }
     if (mode === 'signup') setSignupDone(true)
+  }
+
+  const handleGoogleCredential = async (credential: string) => {
+    setSubmitting(true)
+    setError(null)
+    const result = await signInWithGoogle(credential)
+    setSubmitting(false)
+    if (result.error) setError(result.error)
   }
 
   return (
@@ -135,12 +197,19 @@ export default function Login({ onBack }: { onBack?: () => void }) {
               </button>
             </form>
 
+            <GoogleSignInButton onCredential={handleGoogleCredential} />
+
             <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-muted)', marginTop: 20 }}>
               {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
               <a href="#" onClick={(e) => { e.preventDefault(); setError(null); setMode(mode === 'signin' ? 'signup' : 'signin') }}>
                 {mode === 'signin' ? 'Sign up' : 'Sign in'}
               </a>
             </p>
+            {mode === 'signup' && (
+              <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
+                Reception desk accounts are set up by the clinic admin and aren't available here.
+              </p>
+            )}
           </>
         )}
       </div>

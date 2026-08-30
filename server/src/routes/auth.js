@@ -8,7 +8,14 @@ import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
 
-const VALID_ROLES = ['patient', 'doctor', 'receptionist']
+// Bug fix: previously ANY role including 'receptionist' could be picked on
+// the public signup form, so any random visitor could give themselves the
+// reception/admin desk. Reception accounts are now fixed and created only by
+// the server itself (see seedReceptionist() in seed.js, driven by
+// RECEPTION_EMAIL/RECEPTION_PASSWORD in server/.env) - the public signup
+// form and this endpoint only ever create patients or doctors.
+const VALID_ROLES = ['patient', 'doctor']
+const PUBLIC_SIGNUP_ROLES = new Set(['patient', 'doctor'])
 
 // Bug fix: login/signup had no brute-force protection at all - anyone could
 // script thousands of password guesses per second against any email. Caps
@@ -53,6 +60,9 @@ router.post('/signup', authLimiter, async (req, res) => {
     }
     if (!isStrongPassword(password)) {
       return res.status(400).json({ error: 'Password must be at least 8 characters and include a letter and a number' })
+    }
+    if (role && !PUBLIC_SIGNUP_ROLES.has(role)) {
+      return res.status(403).json({ error: 'Receptionist accounts are managed by the clinic admin and cannot be self-registered. Please contact your administrator.' })
     }
     const normalizedRole = VALID_ROLES.includes(role) ? role : 'patient'
     const normalizedEmail = String(email).toLowerCase().trim()
@@ -173,6 +183,70 @@ router.post('/change-password', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('change password error', err)
     return res.status(500).json({ error: 'Could not change password' })
+  }
+})
+
+// POST /api/auth/google - "Sign in with Google". The client sends the
+// `credential` JWT it gets from Google Identity Services (see
+// client/src/pages/Login.tsx). We verify it directly against Google's
+// tokeninfo endpoint (no extra SDK/dependency needed) and check the
+// `aud` claim matches our own GOOGLE_CLIENT_ID so a token issued for some
+// other app can't be replayed here. First-time Google sign-ins are created
+// as a 'patient' (same rule as normal signup - doctor/receptionist accounts
+// still have to be set up through the normal channels).
+//
+// Requires GOOGLE_CLIENT_ID in server/.env (and the same ID as
+// VITE_GOOGLE_CLIENT_ID in client/.env) - get one at
+// https://console.cloud.google.com/apis/credentials.
+router.post('/google', authLimiter, async (req, res) => {
+  try {
+    const { credential } = req.body || {}
+    if (!credential) {
+      return res.status(400).json({ error: 'Missing Google credential' })
+    }
+    const clientId = process.env.GOOGLE_CLIENT_ID
+    if (!clientId) {
+      return res.status(503).json({ error: 'Google sign-in isn\'t configured yet. Add GOOGLE_CLIENT_ID to server/.env (see README).' })
+    }
+
+    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`)
+    if (!verifyRes.ok) {
+      return res.status(401).json({ error: 'Invalid Google credential' })
+    }
+    const payload = await verifyRes.json()
+    if (payload.aud !== clientId) {
+      return res.status(401).json({ error: 'Google credential was not issued for this app' })
+    }
+    if (!payload.email || payload.email_verified !== 'true') {
+      return res.status(401).json({ error: 'Google account has no verified email' })
+    }
+
+    const normalizedEmail = String(payload.email).toLowerCase().trim()
+    let user = await User.findOne({ email: normalizedEmail })
+    if (!user) {
+      // No password on Google-only accounts - store an unusable random hash
+      // so the schema's requirement is satisfied but password login can
+      // never succeed for this account.
+      const randomPassword = await bcrypt.hash(`google-oauth:${normalizedEmail}:${Date.now()}:${Math.random()}`, 10)
+      user = await User.create({ email: normalizedEmail, passwordHash: randomPassword })
+      await Profile.create({
+        _id: user._id,
+        email: normalizedEmail,
+        full_name: (payload.name || '').trim(),
+        role: 'patient',
+      })
+    }
+
+    const token = signToken(user._id)
+    const profile = await buildProfilePayload(user._id)
+    return res.json({
+      token,
+      user: { id: user._id.toString(), email: user.email },
+      profile,
+    })
+  } catch (err) {
+    console.error('google auth error', err)
+    return res.status(500).json({ error: 'Could not sign in with Google' })
   }
 })
 

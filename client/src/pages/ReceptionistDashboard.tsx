@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ShieldPlus, LogOut, HeartHandshake, Link2, MessageCircle, CircleCheck as CheckCircle, UserPlus, BarChart3 } from 'lucide-react'
+import { ShieldPlus, LogOut, HeartHandshake, Link2, MessageCircle, CircleCheck as CheckCircle, UserPlus, BarChart3, Trash2, Settings as SettingsIcon } from 'lucide-react'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts'
 import { useAuth } from '../lib/auth'
 import { db } from '../lib/db'
 import { LoadingState, EmptyState, Modal } from '../lib/ui'
+import Settings from './Settings'
 import type { Doctor } from '../lib/types'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -28,7 +29,7 @@ const emptyDoctorForm = { profile_id: '', specialty: '', qualification: '', expe
 
 export default function ReceptionistDashboard() {
   const { profile, signOut } = useAuth()
-  const [tab, setTab] = useState<'inquiries' | 'doctors' | 'analytics'>('inquiries')
+  const [tab, setTab] = useState<'inquiries' | 'doctors' | 'analytics' | 'settings'>('inquiries')
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [doctorProfiles, setDoctorProfiles] = useState<ProfileRow[]>([])
   const [doctorRows, setDoctorRows] = useState<Doctor[]>([])
@@ -66,6 +67,15 @@ export default function ReceptionistDashboard() {
 
   const unlinkDoctor = async (doctorRowId: string) => {
     await db.from('doctors').update({ profile_id: null }).eq('id', doctorRowId)
+    load()
+  }
+
+  // New feature: reception previously had no way to remove a doctor listing
+  // once added (only link/unlink). This deletes the catalog entry itself -
+  // the doctor's login account is untouched, so they can be re-added later.
+  const deleteDoctor = async (doctorRowId: string, name: string) => {
+    if (!window.confirm(`Remove ${name} from the doctor catalog? Patients will no longer be able to find or book them. This cannot be undone.`)) return
+    await db.from('doctors').delete().eq('id', doctorRowId)
     load()
   }
 
@@ -136,9 +146,14 @@ export default function ReceptionistDashboard() {
           <button className={`btn btn-sm ${tab === 'analytics' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('analytics')}>
             <BarChart3 size={15} /> Analytics
           </button>
+          <button className={`btn btn-sm ${tab === 'settings' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('settings')}>
+            <SettingsIcon size={15} /> Settings
+          </button>
         </div>
 
-        {loading ? <LoadingState /> : tab === 'inquiries' ? (
+        {tab === 'settings' ? (
+          <Settings />
+        ) : loading ? <LoadingState /> : tab === 'inquiries' ? (
           inquiries.length === 0 ? (
             <EmptyState icon={HeartHandshake} title="No inquiries" subtitle="Patient help requests will show up here." />
           ) : (
@@ -215,6 +230,9 @@ export default function ReceptionistDashboard() {
                         ))}
                       </select>
                     )}
+                    <button className="btn btn-ghost btn-sm" onClick={() => deleteDoctor(d.id, d.name)} title="Remove from catalog" style={{ padding: 6 }}>
+                      <Trash2 size={16} color="var(--error-500)" />
+                    </button>
                   </div>
                 ))}
               </div>

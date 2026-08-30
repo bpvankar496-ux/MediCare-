@@ -15,7 +15,7 @@ import fs from 'fs'
 import authRoutes from './routes/auth.js'
 import collectionRoutes from './routes/collections.js'
 import aiRoutes from './routes/ai.js'
-import { seedCatalog } from './seed.js'
+import { seedCatalog, seedReceptionist } from './seed.js'
 import { attachRealtime } from './realtime.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -78,6 +78,7 @@ mongoose
     console.log('Connected to MongoDB')
     try {
       await seedCatalog()
+      await seedReceptionist()
     } catch (err) {
       console.error('Auto-seed failed (continuing anyway):', err.message)
     }

@@ -3,11 +3,12 @@ import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
 
-// Requires ANTHROPIC_API_KEY in server/.env (get one at console.anthropic.com).
+// Requires GROQ_API_KEY in server/.env (free, no card - get one at console.groq.com/keys).
+// Groq exposes an OpenAI-compatible chat completions endpoint.
 // Uses plain fetch so no extra SDK dependency is needed - Node 18+ has a
 // built-in global fetch.
-const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5'
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 const SYSTEM_PROMPT = `You are a careful, conservative medical triage assistant inside a healthcare app called MediCare+.
 A patient will describe their symptoms in free text. Respond with ONLY a JSON object (no markdown, no prose before or after) matching this exact shape:
@@ -38,38 +39,40 @@ router.post('/symptom-check', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'Please keep your description under 1000 characters.' })
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
     return res.status(503).json({
-      error: 'AI symptom analysis isn\'t configured yet. Add ANTHROPIC_API_KEY to server/.env to enable it (see README).',
+      error: 'AI symptom analysis isn\'t configured yet. Add GROQ_API_KEY to server/.env to enable it (see README).',
     })
   }
 
   try {
-    const response = await fetch(ANTHROPIC_API_URL, {
+    const response = await fetch(GROQ_API_URL, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 700,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: symptoms.trim() }],
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: symptoms.trim() },
+        ],
       }),
     })
 
     if (!response.ok) {
       const errBody = await response.json().catch(() => null)
-      console.error('Anthropic API error', response.status, errBody)
+      console.error('Groq API error', response.status, errBody)
       return res.status(502).json({ error: 'AI symptom analysis is temporarily unavailable. Please try again shortly.' })
     }
 
     const data = await response.json()
-    const textBlock = (data.content || []).find((b) => b.type === 'text')
-    if (!textBlock) {
+    const messageText = data.choices?.[0]?.message?.content
+    if (!messageText) {
       return res.status(502).json({ error: 'AI symptom analysis returned an unexpected response.' })
     }
 
@@ -77,10 +80,10 @@ router.post('/symptom-check', requireAuth, async (req, res) => {
     try {
       // The model is instructed to return pure JSON, but strip any stray
       // markdown code fences defensively in case it doesn't.
-      const cleaned = textBlock.text.replace(/^```json\s*|```\s*$/g, '').trim()
+      const cleaned = messageText.replace(/^```json\s*|```\s*$/g, '').trim()
       parsed = JSON.parse(cleaned)
     } catch (parseErr) {
-      console.error('Failed to parse AI symptom-check response', parseErr, textBlock.text)
+      console.error('Failed to parse AI symptom-check response', parseErr, messageText)
       return res.status(502).json({ error: 'AI symptom analysis returned an unexpected format. Please try again.' })
     }
 

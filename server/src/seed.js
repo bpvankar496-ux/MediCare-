@@ -5,6 +5,7 @@
 // Run with: npm run seed
 
 import 'dotenv/config'
+import bcrypt from 'bcryptjs'
 import mongoose from 'mongoose'
 import Doctor from './models/Doctor.js'
 import Medicine from './models/Medicine.js'
@@ -12,6 +13,8 @@ import LabTest from './models/LabTest.js'
 import Symptom from './models/Symptom.js'
 import Hospital from './models/Hospital.js'
 import Article from './models/Article.js'
+import User from './models/User.js'
+import Profile from './models/Profile.js'
 
 const doctors = [
   { name: 'Dr. Aanya Sharma', specialty: 'Cardiologist', qualification: 'MD - Cardiology, MBBS', experience_years: 15, fee: 1200, rating: 4.9, reviews_count: 320, hospital: 'Apollo Heart Institute', city: 'Mumbai', availability: ['Mon 10:00-14:00', 'Tue 10:00-14:00', 'Wed 16:00-20:00', 'Fri 10:00-14:00'], about: 'Senior interventional cardiologist specializing in coronary angioplasty and heart failure management.', languages: ['English', 'Hindi', 'Marathi'], image_url: 'https://i.pravatar.cc/300?img=12' },
@@ -125,6 +128,32 @@ async function seedCatalog() {
   }
 }
 
+// Bug fix: the receptionist role used to be pickable on public signup, so
+// anyone could give themselves the reception/admin desk. Now that public
+// signup only allows patient/doctor, reception needs a fixed account that
+// only the clinic admin controls - created here on server startup (and via
+// `npm run seed`) from RECEPTION_EMAIL / RECEPTION_PASSWORD in server/.env,
+// so there is always exactly one way in. If those env vars are left unset,
+// a default is used and printed to the console so it's easy to log in for
+// local/dev use - change the password from Settings after your first login.
+async function seedReceptionist() {
+  const email = String(process.env.RECEPTION_EMAIL || 'reception@medicare.local').toLowerCase().trim()
+  const password = process.env.RECEPTION_PASSWORD || 'Reception@123'
+  const fullName = process.env.RECEPTION_NAME || 'Reception Desk'
+
+  const existing = await User.findOne({ email })
+  if (existing) {
+    console.log(`Reception account already exists (${email}) - skipping`)
+    return
+  }
+
+  const passwordHash = await bcrypt.hash(String(password), 10)
+  const user = await User.create({ email, passwordHash })
+  await Profile.create({ _id: user._id, email, full_name: fullName, role: 'receptionist' })
+  console.log(`Created reception account: ${email} / ${process.env.RECEPTION_PASSWORD ? '(password from .env)' : password}`)
+  console.log('Change this password from Settings after logging in, and set RECEPTION_EMAIL/RECEPTION_PASSWORD in server/.env for production.')
+}
+
 // Runs standalone via `npm run seed` (connects to Mongo itself, then exits).
 // Also imported and reused by index.js so a fresh database is auto-populated
 // on server startup - no manual step required.
@@ -136,6 +165,7 @@ async function runStandalone() {
   await mongoose.connect(process.env.MONGODB_URI)
   console.log('Connected. Seeding...')
   await seedCatalog()
+  await seedReceptionist()
   console.log('Done.')
   await mongoose.disconnect()
 }
@@ -148,4 +178,4 @@ if (isMain) {
   })
 }
 
-export { seedCatalog }
+export { seedCatalog, seedReceptionist }

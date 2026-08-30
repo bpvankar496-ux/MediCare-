@@ -5,6 +5,7 @@ import {
   TrendingUp, Clock, ArrowRight,
 } from 'lucide-react'
 import { useSupabaseQuery } from '../lib/ui'
+import { useAuth } from '../lib/auth'
 import type { Appointment, Reminder, Vital } from '../lib/types'
 
 const quickLinks = [
@@ -19,6 +20,8 @@ const quickLinks = [
 ]
 
 export default function Dashboard() {
+  const { profile } = useAuth()
+  const firstName = profile?.full_name?.trim()?.split(' ')[0]
   const { data: appointments } = useSupabaseQuery<Appointment>('appointments', '*', 'date', false)
   const { data: reminders } = useSupabaseQuery<Reminder>('reminders', '*', 'created_at', false)
   const { data: vitals } = useSupabaseQuery<Vital>('vitals', '*', 'recorded_at', false)
@@ -38,7 +41,7 @@ export default function Dashboard() {
         <div style={{ position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
         <div style={{ position: 'absolute', right: 60, bottom: -60, width: 150, height: 150, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ position: 'relative' }}>
-          <h1 style={{ color: 'white', fontSize: 28, marginBottom: 8 }}>Welcome to MediCare+</h1>
+          <h1 style={{ color: 'white', fontSize: 28, marginBottom: 8 }}>{firstName ? `Welcome back, ${firstName}` : 'Welcome to MediCare+'}</h1>
           <p style={{ fontSize: 16, opacity: 0.9, marginBottom: 20, maxWidth: 500 }}>
             Your complete healthcare companion. Book appointments, order medicines, track your health, and more — all in one place.
           </p>
