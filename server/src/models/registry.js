@@ -14,6 +14,7 @@ import Consultation from './Consultation.js'
 import Article from './Article.js'
 import Inquiry from './Inquiry.js'
 import Profile from './Profile.js'
+import Review from './Review.js'
 
 // Maps the collection name used by the frontend (same names the old
 // Supabase tables had) to its Mongoose model. This is what powers the
@@ -35,6 +36,7 @@ export const registry = {
   articles: Article,
   inquiries: Inquiry,
   profiles: Profile,
+  reviews: Review,
 }
 
 // Collections where direct client inserts/deletes are blocked because they

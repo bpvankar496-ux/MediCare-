@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
-import { ShieldPlus, LogOut, Calendar, Clock, Video as VideoIcon, Phone, MessageSquare, Stethoscope, PhoneIncoming } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ShieldPlus, LogOut, Calendar, Clock, Video as VideoIcon, Phone, MessageSquare, Stethoscope, PhoneIncoming, TrendingUp } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useAuth } from '../lib/auth'
 import { db } from '../lib/db'
 import { VideoCall } from '../lib/VideoCall'
 import { ChatOnly } from '../lib/ChatOnly'
-import { LoadingState, EmptyState, Modal } from '../lib/ui'
+import { LoadingState, EmptyState, Modal, DoctorAvatar } from '../lib/ui'
 import { useIncomingCallInvites, sendCallInvite, useNotificationPermission } from '../lib/callInvites'
 import type { Appointment, Consultation, Doctor } from '../lib/types'
 
@@ -62,13 +63,36 @@ export default function DoctorDashboard() {
 
   const modeIcon = (mode: string) => mode === 'video' ? <VideoIcon size={16} /> : mode === 'phone' ? <Phone size={16} /> : <MessageSquare size={16} />
 
+  // Last-7-days appointment volume, used by the analytics bar chart below.
+  const weeklyData = useMemo(() => {
+    const days: { label: string; date: string; count: number }[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const iso = d.toISOString().split('T')[0]
+      days.push({ label: d.toLocaleDateString('en-US', { weekday: 'short' }), date: iso, count: 0 })
+    }
+    appointments.forEach((a) => {
+      const day = days.find((d) => d.date === a.date)
+      if (day) day.count += 1
+    })
+    return days
+  }, [appointments])
+
+  const completedCount = appointments.filter((a) => a.status === 'completed').length
+  const upcomingCount = appointments.filter((a) => a.status === 'upcoming' || a.status === 'confirmed').length
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <header style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--primary-500)', display: 'grid', placeItems: 'center' }}>
-            <ShieldPlus color="white" size={20} />
-          </div>
+          {linkedDoctor ? (
+            <DoctorAvatar doc={linkedDoctor} size={36} />
+          ) : (
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--primary-500)', display: 'grid', placeItems: 'center' }}>
+              <ShieldPlus color="white" size={20} />
+            </div>
+          )}
           <div>
             <div style={{ fontWeight: 700, color: 'var(--text-h)' }}>MediCare+ Doctor Portal</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{profile?.full_name || profile?.email}</div>
@@ -111,6 +135,37 @@ export default function DoctorDashboard() {
                 </p>
               </div>
             )}
+
+            {/* Analytics overview */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }} className="dash-links-row">
+              <div className="card" style={{ padding: 16 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Total Appointments</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-h)' }}>{appointments.length}</div>
+              </div>
+              <div className="card" style={{ padding: 16 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Upcoming</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--primary-600)' }}>{upcomingCount}</div>
+              </div>
+              <div className="card" style={{ padding: 16 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Completed</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--success-600)' }}>{completedCount}</div>
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: 20, marginBottom: 28 }}>
+              <h4 style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <TrendingUp size={17} color="var(--primary-500)" /> Appointments — Last 7 Days
+              </h4>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={weeklyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="label" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis allowDecimals={false} stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} width={28} />
+                  <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }} />
+                  <Bar dataKey="count" name="Appointments" fill="var(--primary-500)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
             <h3 style={{ marginBottom: 14 }}><Calendar size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: -3 }} color="var(--primary-500)" />Appointments</h3>
             {appointments.length === 0 ? (

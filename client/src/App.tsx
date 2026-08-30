@@ -16,20 +16,26 @@ import Family from './pages/Family'
 import Inquiries from './pages/Inquiries'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
+import Landing from './pages/Landing'
 import DoctorDashboard from './pages/DoctorDashboard'
 import ReceptionistDashboard from './pages/ReceptionistDashboard'
 import { useAuth } from './lib/auth'
 import { LoadingState } from './lib/ui'
+import { useState } from 'react'
 
 export default function App() {
   const { user, profile, loading } = useAuth()
+  const [showLogin, setShowLogin] = useState(false)
 
   if (loading) {
     return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}><LoadingState /></div>
   }
 
   if (!user) {
-    return <Login />
+    if (!showLogin) {
+      return <Landing onGetStarted={() => setShowLogin(true)} />
+    }
+    return <Login onBack={() => setShowLogin(false)} />
   }
 
   if (profile?.role === 'doctor') {

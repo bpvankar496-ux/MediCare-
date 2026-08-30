@@ -1,18 +1,24 @@
 import { useState, useMemo } from 'react'
 import { FlaskConical, Search, Plus, Minus, CircleCheck as CheckCircle, Droplet, Clock, Calendar, Hop as Home } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal } from '../lib/ui'
+import { PaymentPanel, PayingButton, type PaymentMethod } from '../lib/payment'
+import { useToast } from '../lib/toast'
 import { db } from '../lib/db'
 import type { LabTest, LabTestBooking } from '../lib/types'
 
 export default function LabTests() {
   const { data: tests, loading, error } = useSupabaseQuery<LabTest>('lab_tests')
   const { data: bookings, refetch: refetchBookings } = useSupabaseQuery<LabTestBooking>('lab_test_bookings', '*', 'created_at', false)
+  const { showToast } = useToast()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [selected, setSelected] = useState<Record<string, number>>({})
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [success, setSuccess] = useState(false)
   const [form, setForm] = useState({ patient_name: '', date: '', time_slot: '', home_collection: true, address: '' })
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod')
+  const [paymentValid, setPaymentValid] = useState(true)
+  const [paying, setPaying] = useState(false)
 
   const categories = useMemo(() => {
     const set = new Set(tests?.map((t) => t.category) ?? [])
@@ -33,7 +39,11 @@ export default function LabTests() {
   const totalTests = selectedItems.reduce((sum, i) => sum + i.qty, 0)
 
   const bookTests = async () => {
-    if (!form.patient_name || !form.date || !form.time_slot) return
+    if (!form.patient_name || !form.date || !form.time_slot || !paymentValid) return
+    setPaying(true)
+    if (paymentMethod !== 'cod') {
+      await new Promise((resolve) => setTimeout(resolve, 1200))
+    }
     const { error } = await db.from('lab_test_bookings').insert({
       test_ids: selectedItems.map((i) => ({ id: i.test.id, name: i.test.name, price: i.test.price })),
       total,
@@ -42,11 +52,16 @@ export default function LabTests() {
       time_slot: form.time_slot,
       home_collection: form.home_collection,
       address: form.home_collection ? form.address : null,
+      payment_method: paymentMethod,
       status: 'booked',
     })
-    if (error) return
-    setSelected({}); setCheckoutOpen(false); setSuccess(true); setForm({ patient_name: '', date: '', time_slot: '', home_collection: true, address: '' })
+    setPaying(false)
+    if (error) { showToast(error.message, 'error'); return }
+    setSelected({}); setCheckoutOpen(false); setSuccess(true)
+    setForm({ patient_name: '', date: '', time_slot: '', home_collection: true, address: '' })
+    setPaymentMethod('cod'); setPaymentValid(true)
     refetchBookings()
+    showToast('Lab test booking confirmed!', 'success')
   }
 
   if (loading) return <div><PageHeader title="Lab Tests" subtitle="Book diagnostic tests with home sample collection" icon={FlaskConical} /><LoadingState /></div>
@@ -131,7 +146,9 @@ export default function LabTests() {
 
       <Modal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} title="Book Lab Tests"
         footer={<><button className="btn btn-ghost" onClick={() => setCheckoutOpen(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={bookTests} disabled={!form.patient_name || !form.date || !form.time_slot}>Confirm Booking - ₹{total}</button></>}
+          <button className="btn btn-primary" onClick={bookTests} disabled={!form.patient_name || !form.date || !form.time_slot || !paymentValid || paying}>
+            <PayingButton paying={paying} label={`Confirm Booking - ₹${total}`} />
+          </button></>}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ padding: 12, background: 'var(--neutral-50)', borderRadius: 'var(--radius-sm)', fontSize: 13 }}>
@@ -154,6 +171,7 @@ export default function LabTests() {
             </div>
           </div>
           {form.home_collection && <div><label className="label">Address</label><textarea className="input" rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Home collection address" /></div>}
+          <PaymentPanel method={paymentMethod} onMethodChange={setPaymentMethod} onValidChange={setPaymentValid} />
         </div>
       </Modal>
 

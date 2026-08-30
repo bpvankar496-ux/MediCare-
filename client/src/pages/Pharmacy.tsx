@@ -1,12 +1,28 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Pill, Search, ShoppingCart, Plus, Minus, Trash2, CircleCheck as CheckCircle, Package } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal } from '../lib/ui'
+import { PaymentPanel, PayingButton, type PaymentMethod } from '../lib/payment'
+import { useToast } from '../lib/toast'
 import { db } from '../lib/db'
 import type { Medicine, CartItem, MedicineOrder } from '../lib/types'
+
+const CATEGORY_STYLE: Record<string, { bg: string; color: string }> = {
+  'Pain Relief': { bg: 'var(--error-50)', color: 'var(--error-500)' },
+  'Antibiotic': { bg: 'var(--accent-50)', color: 'var(--accent-500)' },
+  'Diabetes': { bg: 'var(--warning-50)', color: 'var(--warning-600)' },
+  'Cardiac': { bg: 'var(--primary-50)', color: 'var(--primary-500)' },
+  'Gastric': { bg: 'var(--secondary-50)', color: 'var(--secondary-500)' },
+  'Allergy': { bg: 'var(--success-50)', color: 'var(--success-500)' },
+  'Supplements': { bg: 'var(--warning-50)', color: 'var(--warning-500)' },
+  'Cold and Cough': { bg: 'var(--accent-50)', color: 'var(--accent-400)' },
+  'Respiratory': { bg: 'var(--primary-50)', color: 'var(--primary-400)' },
+}
+const defaultCategoryStyle = { bg: 'var(--neutral-100)', color: 'var(--primary-300)' }
 
 export default function Pharmacy() {
   const { data: medicines, loading, error } = useSupabaseQuery<Medicine>('medicines')
   const { data: orders, refetch: refetchOrders } = useSupabaseQuery<MedicineOrder>('medicine_orders', '*', 'created_at', false)
+  const { showToast } = useToast()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [cart, setCart] = useState<CartItem[]>([])
@@ -14,7 +30,9 @@ export default function Pharmacy() {
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null)
   const [address, setAddress] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState('cod')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod')
+  const [paymentValid, setPaymentValid] = useState(true)
+  const [paying, setPaying] = useState(false)
 
   useEffect(() => {
     try { const saved = localStorage.getItem('pharmacy_cart'); if (saved) setCart(JSON.parse(saved)) } catch { /* ignore */ }
@@ -44,6 +62,7 @@ export default function Pharmacy() {
       if (existing) return prev.map((i) => i.id === med.id ? { ...i, quantity: i.quantity + 1 } : i)
       return [...prev, { id: med.id, name: med.name, brand: med.brand, price: med.price, quantity: 1 }]
     })
+    showToast(`${med.name} added to cart`, 'info')
   }
   const updateQty = (id: string, delta: number) => {
     setCart((prev) => prev.map((i) => i.id === id ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i).filter((i) => i.quantity > 0))
@@ -51,7 +70,12 @@ export default function Pharmacy() {
   const removeFromCart = (id: string) => setCart((prev) => prev.filter((i) => i.id !== id))
 
   const placeOrder = async () => {
-    if (!address.trim()) return
+    if (!address.trim() || !paymentValid) return
+    setPaying(true)
+    // Simulated payment processing delay for card/UPI (sandbox mode — see lib/payment.tsx).
+    if (paymentMethod !== 'cod') {
+      await new Promise((resolve) => setTimeout(resolve, 1200))
+    }
     const orderNum = `MED${Date.now().toString().slice(-8)}`
     const { error } = await db.from('medicine_orders').insert({
       order_number: orderNum,
@@ -61,10 +85,12 @@ export default function Pharmacy() {
       status: 'placed',
       payment_method: paymentMethod,
     })
-    if (error) return
+    setPaying(false)
+    if (error) { showToast(error.message, 'error'); return }
     setCart([]); setCheckoutOpen(false); setCartOpen(false)
-    setOrderSuccess(orderNum); setAddress('')
+    setOrderSuccess(orderNum); setAddress(''); setPaymentMethod('cod'); setPaymentValid(true)
     refetchOrders()
+    showToast(`Order ${orderNum} placed successfully!`, 'success')
   }
 
   if (loading) return <div><PageHeader title="Pharmacy" subtitle="Order medicines online with home delivery" icon={Pill} /><LoadingState /></div>
@@ -91,10 +117,11 @@ export default function Pharmacy() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
         {filtered.map((med) => {
           const inCart = cart.find((i) => i.id === med.id)
+          const style = CATEGORY_STYLE[med.category] || defaultCategoryStyle
           return (
             <div key={med.id} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ height: 80, borderRadius: 'var(--radius-sm)', background: 'var(--neutral-100)', display: 'grid', placeItems: 'center' }}>
-                <Pill size={32} color="var(--primary-300)" />
+              <div style={{ height: 80, borderRadius: 'var(--radius-sm)', background: style.bg, display: 'grid', placeItems: 'center' }}>
+                <Pill size={32} color={style.color} />
               </div>
               <div>
                 <h4 style={{ fontSize: 15, marginBottom: 2 }}>{med.name}</h4>
@@ -192,19 +219,16 @@ export default function Pharmacy() {
       {/* Checkout Modal */}
       <Modal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} title="Checkout"
         footer={<><button className="btn btn-ghost" onClick={() => setCheckoutOpen(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={placeOrder} disabled={!address.trim()}>Place Order - ₹{cartTotal}</button></>}
+          <button className="btn btn-primary" onClick={placeOrder} disabled={!address.trim() || !paymentValid || paying}>
+            <PayingButton paying={paying} label={`Place Order - ₹${cartTotal}`} />
+          </button></>}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
             <label className="label">Delivery Address *</label>
             <textarea className="input" rows={3} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter full delivery address" />
           </div>
-          <div>
-            <label className="label">Payment Method</label>
-            <select className="input" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-              <option value="cod">Cash on Delivery</option><option value="upi">UPI</option><option value="card">Card</option>
-            </select>
-          </div>
+          <PaymentPanel method={paymentMethod} onMethodChange={setPaymentMethod} onValidChange={setPaymentValid} />
           <div style={{ padding: 16, background: 'var(--neutral-50)', borderRadius: 'var(--radius-sm)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span>Items</span><span>{cartCount}</span></div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span>Delivery</span><span>Free</span></div>

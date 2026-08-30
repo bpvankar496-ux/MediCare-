@@ -11,6 +11,7 @@ const labTestBookingSchema = new mongoose.Schema({
   time_slot: { type: String, required: true },
   home_collection: { type: Boolean, default: true },
   address: { type: String, default: null },
+  payment_method: { type: String, default: 'cod' },
   status: { type: String, default: 'booked' },
   created_at: { type: Date, default: Date.now },
 })

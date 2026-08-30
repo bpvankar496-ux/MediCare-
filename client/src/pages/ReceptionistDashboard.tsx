@@ -1,9 +1,16 @@
-import { useEffect, useState } from 'react'
-import { ShieldPlus, LogOut, HeartHandshake, Link2, MessageCircle, CircleCheck as CheckCircle, UserPlus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ShieldPlus, LogOut, HeartHandshake, Link2, MessageCircle, CircleCheck as CheckCircle, UserPlus, BarChart3 } from 'lucide-react'
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts'
 import { useAuth } from '../lib/auth'
 import { db } from '../lib/db'
 import { LoadingState, EmptyState, Modal } from '../lib/ui'
 import type { Doctor } from '../lib/types'
+
+const STATUS_COLORS: Record<string, string> = {
+  open: 'var(--warning-400)',
+  in_progress: 'var(--accent-400)',
+  resolved: 'var(--success-400)',
+}
 
 interface ProfileRow { id: string; email: string; full_name: string; role: string }
 interface Inquiry {
@@ -21,7 +28,7 @@ const emptyDoctorForm = { profile_id: '', specialty: '', qualification: '', expe
 
 export default function ReceptionistDashboard() {
   const { profile, signOut } = useAuth()
-  const [tab, setTab] = useState<'inquiries' | 'doctors'>('inquiries')
+  const [tab, setTab] = useState<'inquiries' | 'doctors' | 'analytics'>('inquiries')
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [doctorProfiles, setDoctorProfiles] = useState<ProfileRow[]>([])
   const [doctorRows, setDoctorRows] = useState<Doctor[]>([])
@@ -90,6 +97,19 @@ export default function ReceptionistDashboard() {
 
   const statusBadge = (s: string) => s === 'open' ? 'badge-warning' : s === 'in_progress' ? 'badge-info' : 'badge-success'
 
+  // Analytics: inquiry status breakdown + doctor count per specialty.
+  const inquiryStatusData = useMemo(() => {
+    const counts: Record<string, number> = { open: 0, in_progress: 0, resolved: 0 }
+    inquiries.forEach((i) => { counts[i.status] = (counts[i.status] || 0) + 1 })
+    return Object.entries(counts).map(([status, value]) => ({ name: status.replace('_', ' '), status, value }))
+  }, [inquiries])
+
+  const specialtyData = useMemo(() => {
+    const counts: Record<string, number> = {}
+    doctorRows.forEach((d) => { counts[d.specialty] = (counts[d.specialty] || 0) + 1 })
+    return Object.entries(counts).map(([specialty, count]) => ({ specialty, count })).sort((a, b) => b.count - a.count)
+  }, [doctorRows])
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <header style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -112,6 +132,9 @@ export default function ReceptionistDashboard() {
           </button>
           <button className={`btn btn-sm ${tab === 'doctors' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('doctors')}>
             <Link2 size={15} /> Link Doctors
+          </button>
+          <button className={`btn btn-sm ${tab === 'analytics' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('analytics')}>
+            <BarChart3 size={15} /> Analytics
           </button>
         </div>
 
@@ -152,7 +175,7 @@ export default function ReceptionistDashboard() {
               ))}
             </div>
           )
-        ) : (
+        ) : tab === 'doctors' ? (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 560 }}>
@@ -196,6 +219,43 @@ export default function ReceptionistDashboard() {
                 ))}
               </div>
             )}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }} className="dashboard-grid">
+            <div className="card" style={{ padding: 20 }}>
+              <h4 style={{ marginBottom: 14 }}>Inquiries by Status</h4>
+              {inquiries.length === 0 ? (
+                <EmptyState icon={MessageCircle} title="No data yet" subtitle="Inquiry stats will appear once patients reach out." />
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={inquiryStatusData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={3}>
+                      {inquiryStatusData.map((entry) => (
+                        <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || 'var(--neutral-300)'} />
+                      ))}
+                    </Pie>
+                    <Legend />
+                    <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            <div className="card" style={{ padding: 20 }}>
+              <h4 style={{ marginBottom: 14 }}>Doctors by Specialty</h4>
+              {specialtyData.length === 0 ? (
+                <EmptyState icon={Link2} title="No doctors yet" subtitle="Add doctors to the catalog to see this breakdown." />
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={specialtyData} layout="vertical" margin={{ left: 24 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                    <XAxis type="number" allowDecimals={false} stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis type="category" dataKey="specialty" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} width={130} />
+                    <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }} />
+                    <Bar dataKey="count" fill="var(--primary-500)" radius={[0, 6, 6, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
         )}
       </main>

@@ -110,6 +110,34 @@ export function Modal({ open, onClose, title, children, footer }: {
   )
 }
 
+// Shows a doctor's real photo when available (image_url), falling back to a
+// nice initials avatar if there's no photo or the image fails to load.
+export function DoctorAvatar({ doc, size = 60 }: { doc: { name: string; image_url?: string | null }; size?: number }) {
+  const [failed, setFailed] = useState(false)
+  const initials = doc.name.split(' ').map((w) => w[0]).slice(0, 2).join('')
+
+  if (doc.image_url && !failed) {
+    return (
+      <img
+        src={doc.image_url}
+        alt={doc.name}
+        onError={() => setFailed(true)}
+        style={{
+          width: size, height: size, borderRadius: 'var(--radius-md)', flexShrink: 0,
+          objectFit: 'cover', border: '1px solid var(--border)',
+        }}
+      />
+    )
+  }
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: 'var(--radius-md)', flexShrink: 0,
+      background: 'var(--primary-50)', display: 'grid', placeItems: 'center',
+      fontSize: size * 0.37, fontWeight: 700, color: 'var(--primary-600)',
+    }}>{initials}</div>
+  )
+}
+
 export function StarRating({ rating }: { rating: number }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>

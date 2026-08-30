@@ -80,6 +80,7 @@ export interface LabTestBooking {
   time_slot: string
   home_collection: boolean
   address: string | null
+  payment_method: string
   status: string
   created_at: string
 }
@@ -192,6 +193,15 @@ export interface Profile {
   id: string
   full_name: string
   role: 'patient' | 'doctor' | 'receptionist'
+  created_at: string
+}
+
+export interface Review {
+  id: string
+  doctor_id: string
+  patient_name: string
+  rating: number
+  comment: string | null
   created_at: string
 }
 

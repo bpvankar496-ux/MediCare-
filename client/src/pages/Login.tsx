@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShieldPlus, Mail, Lock, User as UserIcon, CircleCheck as CheckCircle, Stethoscope, HeartHandshake, UserRound } from 'lucide-react'
+import { ShieldPlus, Mail, Lock, User as UserIcon, CircleCheck as CheckCircle, Stethoscope, HeartHandshake, UserRound, ArrowLeft } from 'lucide-react'
 import { useAuth, type Role } from '../lib/auth'
 
 const roles: { value: Role; label: string; icon: React.ComponentType<{ size?: number; color?: string }> }[] = [
@@ -8,7 +8,7 @@ const roles: { value: Role; label: string; icon: React.ComponentType<{ size?: nu
   { value: 'receptionist', label: 'Receptionist', icon: HeartHandshake },
 ]
 
-export default function Login() {
+export default function Login({ onBack }: { onBack?: () => void }) {
   const { signIn, signUp } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [fullName, setFullName] = useState('')
@@ -37,7 +37,16 @@ export default function Login() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 20, background: 'var(--bg)' }}>
-      <div className="card fade-in" style={{ width: '100%', maxWidth: 420, padding: 32 }}>
+      <div className="card fade-in" style={{ width: '100%', maxWidth: 420, padding: 32, position: 'relative' }}>
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="btn btn-ghost btn-sm"
+            style={{ position: 'absolute', top: 16, left: 16, padding: '6px 10px' }}
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, justifyContent: 'center' }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--primary-500)', display: 'grid', placeItems: 'center' }}>
             <ShieldPlus color="white" size={22} />

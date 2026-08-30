@@ -1,17 +1,22 @@
 import { useState, useMemo } from 'react'
-import { Stethoscope, Search, MapPin, Clock, Award, DollarSign, Calendar, CircleCheck as CheckCircle } from 'lucide-react'
-import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal, StarRating } from '../lib/ui'
+import { Stethoscope, Search, MapPin, Clock, Award, DollarSign, Calendar, CircleCheck as CheckCircle, Star, MessageSquarePlus, X } from 'lucide-react'
+import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal, StarRating, DoctorAvatar } from '../lib/ui'
+import { useToast } from '../lib/toast'
 import { db } from '../lib/db'
-import type { Doctor, Appointment } from '../lib/types'
+import { useAuth } from '../lib/auth'
+import type { Doctor, Appointment, Review } from '../lib/types'
 
 export default function Doctors() {
   const { data: doctors, loading, error } = useSupabaseQuery<Doctor>('doctors')
   const { data: appointments, refetch: refetchAppts } = useSupabaseQuery<Appointment>('appointments', '*', 'date', false)
+  const { data: reviews, refetch: refetchReviews } = useSupabaseQuery<Review>('reviews', '*', 'created_at', false)
+  const { showToast } = useToast()
   const [search, setSearch] = useState('')
   const [specialtyFilter, setSpecialtyFilter] = useState('all')
   const [cityFilter, setCityFilter] = useState('all')
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
   const [bookingSuccess, setBookingSuccess] = useState(false)
+  const [reviewsDoctor, setReviewsDoctor] = useState<Doctor | null>(null)
 
   const specialties = useMemo(() => {
     const set = new Set(doctors?.map((d) => d.specialty) ?? [])
@@ -37,6 +42,7 @@ export default function Doctors() {
   if (error) return <div><PageHeader title="Find Doctors" subtitle="Search and book appointments with specialists" icon={Stethoscope} /><ErrorState message={error} /></div>
 
   const upcomingByDoctor = (doctorId: string) => appointments?.filter((a) => a.doctor_id === doctorId && a.status === 'upcoming') ?? []
+  const reviewsByDoctor = (doctorId: string) => reviews?.filter((r) => r.doctor_id === doctorId) ?? []
 
   return (
     <div className="fade-in">
@@ -62,11 +68,7 @@ export default function Doctors() {
         {filtered.map((doc) => (
           <div key={doc.id} className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ display: 'flex', gap: 14 }}>
-              <div style={{
-                width: 60, height: 60, borderRadius: 'var(--radius-md)', flexShrink: 0,
-                background: 'var(--primary-50)', display: 'grid', placeItems: 'center',
-                fontSize: 22, fontWeight: 700, color: 'var(--primary-600)',
-              }}>{doc.name.split(' ').map((w) => w[0]).slice(0, 2).join('')}</div>
+              <DoctorAvatar doc={doc} size={60} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <h4 style={{ marginBottom: 2 }}>{doc.name}</h4>
                 <p style={{ fontSize: 14, color: 'var(--primary-500)', fontWeight: 600, marginBottom: 4 }}>{doc.specialty}</p>
@@ -91,6 +93,9 @@ export default function Doctors() {
             <button className="btn btn-primary" onClick={() => { setSelectedDoctor(doc); setBookingSuccess(false) }} style={{ marginTop: 'auto' }}>
               <Calendar size={16} /> Book Appointment
             </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setReviewsDoctor(doc)}>
+              <Star size={14} /> {reviewsByDoctor(doc.id).length > 0 ? `${reviewsByDoctor(doc.id).length} Patient Review${reviewsByDoctor(doc.id).length > 1 ? 's' : ''}` : 'Write a Review'}
+            </button>
           </div>
         ))}
       </div>
@@ -105,10 +110,122 @@ export default function Doctors() {
       <BookingModal
         doctor={selectedDoctor}
         onClose={() => setSelectedDoctor(null)}
-        onSuccess={() => { setBookingSuccess(true); refetchAppts() }}
+        onSuccess={() => { setBookingSuccess(true); refetchAppts(); showToast('Appointment booked successfully!', 'success') }}
         success={bookingSuccess}
       />
+
+      {/* Reviews Modal */}
+      <ReviewsModal
+        doctor={reviewsDoctor}
+        reviews={reviewsDoctor ? reviewsByDoctor(reviewsDoctor.id) : []}
+        onClose={() => setReviewsDoctor(null)}
+        onSubmitted={() => { refetchReviews(); showToast('Thanks — your review was posted!', 'success') }}
+      />
     </div>
+  )
+}
+
+function ReviewsModal({ doctor, reviews, onClose, onSubmitted }: {
+  doctor: Doctor | null
+  reviews: Review[]
+  onClose: () => void
+  onSubmitted: () => void
+}) {
+  const { profile } = useAuth()
+  const { showToast } = useToast()
+  const [rating, setRating] = useState(5)
+  const [hoverRating, setHoverRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [patientName, setPatientName] = useState(profile?.full_name || '')
+  const [submitting, setSubmitting] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+
+  if (!doctor) return null
+
+  const submitReview = async () => {
+    if (!patientName.trim()) { showToast('Please enter your name', 'error'); return }
+    setSubmitting(true)
+    const { error } = await db.from('reviews').insert({
+      doctor_id: doctor.id,
+      patient_name: patientName.trim(),
+      rating,
+      comment: comment.trim() || null,
+    })
+    setSubmitting(false)
+    if (error) { showToast(error.message, 'error'); return }
+    setComment(''); setRating(5); setShowForm(false)
+    onSubmitted()
+  }
+
+  return (
+    <Modal
+      open={!!doctor}
+      onClose={onClose}
+      title={`Reviews — ${doctor.name}`}
+      footer={<button className="btn btn-ghost" onClick={onClose}>Close</button>}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {!showForm ? (
+          <button className="btn btn-secondary" onClick={() => setShowForm(true)}>
+            <MessageSquarePlus size={16} /> Write a Review
+          </button>
+        ) : (
+          <div className="card" style={{ padding: 16, background: 'var(--neutral-50)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 600, fontSize: 14 }}>Your Review</span>
+              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)' }}><X size={16} /></button>
+            </div>
+            <div>
+              <label className="label">Your Rating</label>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setRating(n)}
+                    onMouseEnter={() => setHoverRating(n)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    style={{ background: 'none', border: 'none', padding: 2 }}
+                  >
+                    <Star size={24} fill={n <= (hoverRating || rating) ? 'var(--warning-400)' : 'none'} color="var(--warning-400)" />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="label">Your Name</label>
+              <input className="input" value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Your name" />
+            </div>
+            <div>
+              <label className="label">Comment (optional)</label>
+              <textarea className="input" rows={3} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="How was your experience?" />
+            </div>
+            <button className="btn btn-primary" onClick={submitReview} disabled={submitting}>{submitting ? 'Posting...' : 'Post Review'}</button>
+          </div>
+        )}
+
+        {reviews.length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', padding: '12px 0' }}>No reviews yet — be the first to share your experience.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 320, overflowY: 'auto' }}>
+            {reviews.map((r) => (
+              <div key={r.id} style={{ padding: 12, background: 'var(--neutral-50)', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontWeight: 600, fontSize: 13 }}>{r.patient_name}</span>
+                  <span style={{ display: 'flex', gap: 1 }}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} size={12} fill={i < r.rating ? 'var(--warning-400)' : 'none'} color="var(--warning-400)" />
+                    ))}
+                  </span>
+                </div>
+                {r.comment && <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{r.comment}</p>}
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{new Date(r.created_at).toLocaleDateString()}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Modal>
   )
 }
 

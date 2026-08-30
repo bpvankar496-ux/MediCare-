@@ -14,6 +14,7 @@ import fs from 'fs'
 
 import authRoutes from './routes/auth.js'
 import collectionRoutes from './routes/collections.js'
+import aiRoutes from './routes/ai.js'
 import { seedCatalog } from './seed.js'
 import { attachRealtime } from './realtime.js'
 
@@ -38,6 +39,7 @@ app.use(express.json({ limit: '5mb' }))
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 app.use('/api/auth', authRoutes)
+app.use('/api/ai', aiRoutes)
 app.use('/api', collectionRoutes)
 
 // Serves the built frontend so the whole app can run as ONE process/deployment:

@@ -90,6 +90,12 @@ function scopeCreatePayload(doc, req) {
   if (PATIENT_SCOPED_COLLECTIONS.has(req.collectionName) && req.userRole === 'patient') {
     return { ...doc, patient_id: req.userId }
   }
+  // Reviews are publicly readable (anyone can see a doctor's reviews), but we
+  // still stamp who wrote it server-side for auditing/anti-abuse purposes -
+  // the client can never spoof this.
+  if (req.collectionName === 'reviews') {
+    return { ...doc, user_id: req.userId }
+  }
   return doc
 }
 
