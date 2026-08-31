@@ -3,8 +3,10 @@ import { Users, Plus, Trash2, Heart, Phone, CircleCheck as CheckCircle } from 'l
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal, EmptyState } from '../lib/ui'
 import { db } from '../lib/db'
 import type { FamilyMember } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 
 export default function Family() {
+  const { t } = useI18n()
   const { data: members, refetch, loading, error } = useSupabaseQuery<FamilyMember>('family_members', '*', 'created_at', false)
   const [modalOpen, setModalOpen] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -28,12 +30,12 @@ export default function Family() {
 
   const deleteMember = async (id: string) => { await db.from('family_members').delete().eq('id', id); refetch() }
 
-  if (loading) return <div><PageHeader title="Family Members" subtitle="Manage health profiles for your family" icon={Users} /><LoadingState /></div>
-  if (error) return <div><PageHeader title="Family Members" subtitle="Manage health profiles for your family" icon={Users} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={t('ph_family_title')} subtitle={t('ph_family_subtitle')} icon={Users} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={t('ph_family_title')} subtitle={t('ph_family_subtitle')} icon={Users} /><ErrorState message={error} /></div>
 
   return (
     <div className="fade-in">
-      <PageHeader title="Family Members" subtitle="Manage health profiles for your family" icon={Users} />
+      <PageHeader title={t('ph_family_title')} subtitle={t('ph_family_subtitle')} icon={Users} />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
         <button className="btn btn-primary" onClick={() => { setModalOpen(true); setSuccess(false) }}><Plus size={18} /> Add Member</button>

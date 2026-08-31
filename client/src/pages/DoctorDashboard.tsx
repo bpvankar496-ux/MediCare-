@@ -9,6 +9,7 @@ import { ChatOnly } from '../lib/ChatOnly'
 import { LoadingState, EmptyState, Modal, DoctorAvatar } from '../lib/ui'
 import Settings from './Settings'
 import { useIncomingCallInvites, sendCallInvite, useNotificationPermission } from '../lib/callInvites'
+import { QuickSettings } from '../components/QuickSettings'
 import type { Appointment, Consultation, Doctor, Article } from '../lib/types'
 
 const emptyArticleForm = { title: '', category: '', excerpt: '', content: '', read_time: '' }
@@ -181,7 +182,10 @@ export default function DoctorDashboard() {
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{profile?.full_name || profile?.email}</div>
           </div>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={signOut}><LogOut size={16} /> Sign out</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <QuickSettings />
+          <button className="btn btn-ghost btn-sm" onClick={signOut}><LogOut size={16} /> Sign out</button>
+        </div>
       </header>
 
       <main style={{ padding: '28px 24px', maxWidth: 1000, margin: '0 auto' }}>

@@ -3,6 +3,7 @@ import { Activity, Plus, Trash2, Heart, Droplet, Gauge, Weight, Thermometer, Tre
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal, EmptyState } from '../lib/ui'
 import { db } from '../lib/db'
 import type { Vital } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 
 const vitalTypes = [
   { type: 'Blood Pressure', unit: 'mmHg', icon: Heart, color: 'var(--error-500)', bg: 'var(--error-50)' },
@@ -14,6 +15,7 @@ const vitalTypes = [
 ]
 
 export default function Vitals() {
+  const { t } = useI18n()
   const { data: vitals, refetch, loading, error } = useSupabaseQuery<Vital>('vitals', '*', 'recorded_at', false)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState({ type: 'Blood Pressure', value: '', unit: 'mmHg', notes: '' })
@@ -37,12 +39,12 @@ export default function Vitals() {
 
   const deleteVital = async (id: string) => { await db.from('vitals').delete().eq('id', id); refetch() }
 
-  if (loading) return <div><PageHeader title="Vitals Tracker" subtitle="Monitor your blood pressure, heart rate, sugar, and more" icon={Activity} /><LoadingState /></div>
-  if (error) return <div><PageHeader title="Vitals Tracker" subtitle="Monitor your blood pressure, heart rate, sugar, and more" icon={Activity} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={t('ph_vitals_title')} subtitle={t('ph_vitals_subtitle')} icon={Activity} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={t('ph_vitals_title')} subtitle={t('ph_vitals_subtitle')} icon={Activity} /><ErrorState message={error} /></div>
 
   return (
     <div className="fade-in">
-      <PageHeader title="Vitals Tracker" subtitle="Monitor your blood pressure, heart rate, sugar, and more" icon={Activity} />
+      <PageHeader title={t('ph_vitals_title')} subtitle={t('ph_vitals_subtitle')} icon={Activity} />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
         <button className="btn btn-primary" onClick={() => setModalOpen(true)}><Plus size={18} /> Record Vital</button>

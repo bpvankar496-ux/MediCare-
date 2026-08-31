@@ -7,6 +7,7 @@ import {
 import { useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { useI18n, type TranslationKey } from '../lib/i18n'
+import { QuickSettings } from './QuickSettings'
 
 const navItems: { to: string; icon: typeof LayoutDashboard; labelKey: TranslationKey }[] = [
   { to: '/', icon: LayoutDashboard, labelKey: 'nav_dashboard' },
@@ -133,6 +134,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Top bar - theme + language switcher, visible on every screen size
+            right at the top, not tucked away in Settings. */}
+        <div style={{
+          display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
+          padding: '10px 24px', borderBottom: '1px solid var(--border)',
+          background: 'var(--surface)', position: 'sticky', top: 0, zIndex: 40,
+        }} className="desktop-topbar">
+          <QuickSettings />
+        </div>
+
         {/* Mobile header */}
         <header className="mobile-header" style={{
           display: 'none', alignItems: 'center', gap: 12,
@@ -148,6 +159,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <ShieldPlus color="var(--primary-500)" size={22} />
             <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-h)' }}>MediCare+</span>
           </Link>
+          <div style={{ marginLeft: 'auto', marginRight: mobileOpen ? 40 : 0 }}>
+            <QuickSettings />
+          </div>
           {mobileOpen && (
             <button onClick={() => setMobileOpen(false)} style={{ position: 'absolute', right: 16, background: 'none', border: 'none' }}>
               <X size={24} />

@@ -3,6 +3,7 @@ import { BellRing, Plus, Trash2, Clock, Bell, BellOff } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal, EmptyState } from '../lib/ui'
 import { db } from '../lib/db'
 import type { Reminder } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const dayAbbrev = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -44,6 +45,7 @@ function useReminderNotifications(reminders: Reminder[] | null) {
 }
 
 export default function Reminders() {
+  const { t } = useI18n()
   const { data: reminders, refetch, loading, error } = useSupabaseQuery<Reminder>('reminders', '*', 'created_at', false)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState({ title: '', type: 'medicine', time: '08:00', frequency: 'daily', days: [] as string[], notes: '' })
@@ -64,12 +66,12 @@ export default function Reminders() {
   const toggleActive = async (r: Reminder) => { await db.from('reminders').update({ active: !r.active }).eq('id', r.id); refetch() }
   const deleteReminder = async (id: string) => { await db.from('reminders').delete().eq('id', id); refetch() }
 
-  if (loading) return <div><PageHeader title="Reminders" subtitle="Never miss a medicine dose or health checkup" icon={BellRing} /><LoadingState /></div>
-  if (error) return <div><PageHeader title="Reminders" subtitle="Never miss a medicine dose or health checkup" icon={BellRing} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={t('ph_reminders_title')} subtitle={t('ph_reminders_subtitle')} icon={BellRing} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={t('ph_reminders_title')} subtitle={t('ph_reminders_subtitle')} icon={BellRing} /><ErrorState message={error} /></div>
 
   return (
     <div className="fade-in">
-      <PageHeader title="Reminders" subtitle="Never miss a medicine dose or health checkup" icon={BellRing} />
+      <PageHeader title={t('ph_reminders_title')} subtitle={t('ph_reminders_subtitle')} icon={BellRing} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         {permission === 'granted' ? (

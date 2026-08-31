@@ -6,6 +6,7 @@ import { useToast } from '../lib/toast'
 import { db } from '../lib/db'
 import { downloadInvoicePdf } from '../lib/pdf'
 import { useAuth } from '../lib/auth'
+import { useI18n } from '../lib/i18n'
 import type { Medicine, CartItem, MedicineOrder } from '../lib/types'
 
 const CATEGORY_STYLE: Record<string, { bg: string; color: string }> = {
@@ -22,6 +23,7 @@ const CATEGORY_STYLE: Record<string, { bg: string; color: string }> = {
 const defaultCategoryStyle = { bg: 'var(--neutral-100)', color: 'var(--primary-300)' }
 
 export default function Pharmacy() {
+  const { t } = useI18n()
   const { data: medicines, loading, error } = useSupabaseQuery<Medicine>('medicines')
   const { data: orders, refetch: refetchOrders } = useSupabaseQuery<MedicineOrder>('medicine_orders', '*', 'created_at', false)
   const { profile } = useAuth()
@@ -96,12 +98,12 @@ export default function Pharmacy() {
     showToast(`Order ${orderNum} placed successfully!`, 'success')
   }
 
-  if (loading) return <div><PageHeader title="Pharmacy" subtitle="Order medicines online with home delivery" icon={Pill} /><LoadingState /></div>
-  if (error) return <div><PageHeader title="Pharmacy" subtitle="Order medicines online with home delivery" icon={Pill} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={t('ph_pharmacy_title')} subtitle={t('ph_pharmacy_subtitle')} icon={Pill} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={t('ph_pharmacy_title')} subtitle={t('ph_pharmacy_subtitle')} icon={Pill} /><ErrorState message={error} /></div>
 
   return (
     <div className="fade-in">
-      <PageHeader title="Pharmacy" subtitle="Order medicines online with home delivery" icon={Pill} />
+      <PageHeader title={t('ph_pharmacy_title')} subtitle={t('ph_pharmacy_subtitle')} icon={Pill} />
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px' }}>

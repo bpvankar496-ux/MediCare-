@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Calculator, Heart, Activity, Droplet, Weight, Ruler } from 'lucide-react'
 import { PageHeader } from '../lib/ui'
+import { useI18n } from '../lib/i18n'
 
 type CalcType = 'bmi' | 'bmr' | 'ideal-weight' | 'water' | 'heart-rate'
 
@@ -13,6 +14,7 @@ const calculators: { type: CalcType; label: string; icon: React.ComponentType<{ 
 ]
 
 export default function Calculators() {
+  const { t } = useI18n()
   const [active, setActive] = useState<CalcType>('bmi')
   const [form, setForm] = useState({ weight: '', height: '', age: '', gender: 'male', activity: '1.2' })
 
@@ -46,7 +48,7 @@ export default function Calculators() {
 
   return (
     <div className="fade-in">
-      <PageHeader title="Health Calculators" subtitle="Calculate BMI, BMR, ideal weight, water intake, and more" icon={Calculator} />
+      <PageHeader title={t('ph_calculators_title')} subtitle={t('ph_calculators_subtitle')} icon={Calculator} />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
         {calculators.map((c) => (

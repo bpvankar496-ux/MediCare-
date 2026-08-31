@@ -95,6 +95,11 @@ export interface HealthRecord {
   notes: string | null
   file_url: string | null
   created_at: string
+  content_hash?: string | null
+  chain_tx_hash?: string | null
+  chain_block_number?: number | null
+  chain_network?: string | null
+  anchored_at?: string | null
 }
 
 export interface Vital {

@@ -12,6 +12,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 
+import blockchainRoutes from './routes/blockchain.js'
 import authRoutes from './routes/auth.js'
 import collectionRoutes from './routes/collections.js'
 import aiRoutes from './routes/ai.js'
@@ -40,6 +41,7 @@ app.use(express.json({ limit: '5mb' }))
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 app.use('/api/auth', authRoutes)
 app.use('/api/ai', aiRoutes)
+app.use('/api/blockchain', blockchainRoutes) 
 app.use('/api', collectionRoutes)
 
 // Serves the built frontend so the whole app can run as ONE process/deployment:

@@ -6,10 +6,12 @@ import { VideoCall } from '../lib/VideoCall'
 import { ChatOnly } from '../lib/ChatOnly'
 import { useAuth } from '../lib/auth'
 import { useIncomingCallInvites, sendCallInvite, useNotificationPermission } from '../lib/callInvites'
+import { useI18n } from '../lib/i18n'
 import { downloadPrescriptionPdf } from '../lib/pdf'
 import type { Consultation, Doctor } from '../lib/types'
 
 export default function Consultations() {
+  const { t } = useI18n()
   const { profile } = useAuth()
   const myName = profile?.full_name || profile?.email || 'Guest'
   const { data: consultations, refetch } = useSupabaseQuery<Consultation>('consultations', '*', 'created_at', false)
@@ -46,14 +48,14 @@ export default function Consultations() {
 
   const modeIcon = (mode: string) => mode === 'video' ? <VideoIcon size={16} /> : mode === 'phone' ? <Phone size={16} /> : <MessageSquare size={16} />
 
-  if (!consultations) return <div><PageHeader title="Telemedicine" subtitle="Consult doctors via video, phone, or chat" icon={Video} /><LoadingState /></div>
+  if (!consultations) return <div><PageHeader title={t('ph_consultations_title')} subtitle={t('ph_consultations_subtitle')} icon={Video} /><LoadingState /></div>
 
   const scheduled = consultations.filter((c) => c.status === 'scheduled')
   const completed = consultations.filter((c) => c.status === 'completed')
 
   return (
     <div className="fade-in">
-      <PageHeader title="Telemedicine" subtitle="Consult doctors via video, phone, or chat" icon={Video} />
+      <PageHeader title={t('ph_consultations_title')} subtitle={t('ph_consultations_subtitle')} icon={Video} />
 
       {incoming && (
         <div className="card fade-in" style={{ padding: 16, marginBottom: 20, background: 'var(--success-50)', border: '1px solid var(--success-100)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>

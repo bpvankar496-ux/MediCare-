@@ -2,8 +2,10 @@ import { useState, useMemo } from 'react'
 import { BookOpen, Search, Clock, User } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, EmptyState, Modal } from '../lib/ui'
 import type { Article } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 
 export default function Articles() {
+  const { t } = useI18n()
   const { data: articles, loading, error } = useSupabaseQuery<Article>('articles', '*', 'published_at', false)
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -19,12 +21,12 @@ export default function Articles() {
     })
   }, [articles, search, categoryFilter])
 
-  if (loading) return <div><PageHeader title="Health Library" subtitle="Read expert articles on health, nutrition, and wellness" icon={BookOpen} /><LoadingState /></div>
-  if (error) return <div><PageHeader title="Health Library" subtitle="Read expert articles on health, nutrition, and wellness" icon={BookOpen} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={t('ph_articles_title')} subtitle={t('ph_articles_subtitle')} icon={BookOpen} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={t('ph_articles_title')} subtitle={t('ph_articles_subtitle')} icon={BookOpen} /><ErrorState message={error} /></div>
 
   return (
     <div className="fade-in">
-      <PageHeader title="Health Library" subtitle="Read expert articles on health, nutrition, and wellness" icon={BookOpen} />
+      <PageHeader title={t('ph_articles_title')} subtitle={t('ph_articles_subtitle')} icon={BookOpen} />
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px' }}>

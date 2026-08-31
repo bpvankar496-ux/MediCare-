@@ -22,7 +22,7 @@ interface AuthContextValue {
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signUp: (email: string, password: string, fullName: string, role: Role) => Promise<{ error: string | null }>
-  signInWithGoogle: (credential: string) => Promise<{ error: string | null }>
+  signInWithGoogle: (credential: string, role: Role) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
   updateProfile: (fullName: string) => Promise<{ error: string | null }>
@@ -105,9 +105,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // New feature: "Sign in with Google". `credential` is the ID token Google
   // Identity Services hands back to the button's callback (see Login.tsx).
-  const signInWithGoogle = async (credential: string) => {
+  // `role` is only used the first time this Google account signs in (it's
+  // ignored for an existing account) - see server/src/routes/auth.js.
+  const signInWithGoogle = async (credential: string, role: Role) => {
     try {
-      const data = await apiRequest('/api/auth/google', { credential })
+      const data = await apiRequest('/api/auth/google', { credential, role })
       setToken(data.token)
       setUser(data.user)
       setProfile(data.profile)

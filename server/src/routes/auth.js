@@ -216,19 +216,25 @@ router.post('/change-password', requireAuth, async (req, res) => {
 
 // POST /api/auth/google - "Sign in with Google". The client sends the
 // `credential` JWT it gets from Google Identity Services (see
-// client/src/pages/Login.tsx). We verify it directly against Google's
-// tokeninfo endpoint (no extra SDK/dependency needed) and check the
-// `aud` claim matches our own GOOGLE_CLIENT_ID so a token issued for some
-// other app can't be replayed here. First-time Google sign-ins are created
-// as a 'patient' (same rule as normal signup - doctor/receptionist accounts
-// still have to be set up through the normal channels).
+// client/src/pages/Login.tsx) plus the role the person picked on the
+// signup form. We verify the token directly against Google's tokeninfo
+// endpoint (no extra SDK/dependency needed) and check the `aud` claim
+// matches our own GOOGLE_CLIENT_ID so a token issued for some other app
+// can't be replayed here.
+//
+// Bug fix: this used to hardcode role: 'patient' for every first-time
+// Google sign-in, so a doctor who chose "Doctor" on the signup form and
+// then used the Google button ended up with a patient account instead.
+// The role picker on the form now applies to Google sign-ups too - still
+// restricted to PUBLIC_SIGNUP_ROLES (patient/doctor), same as normal
+// signup; receptionist accounts still can't be self-created.
 //
 // Requires GOOGLE_CLIENT_ID in server/.env (and the same ID as
 // VITE_GOOGLE_CLIENT_ID in client/.env) - get one at
 // https://console.cloud.google.com/apis/credentials.
 router.post('/google', authLimiter, async (req, res) => {
   try {
-    const { credential } = req.body || {}
+    const { credential, role } = req.body || {}
     if (!credential) {
       return res.status(400).json({ error: 'Missing Google credential' })
     }
@@ -250,6 +256,7 @@ router.post('/google', authLimiter, async (req, res) => {
     }
 
     const normalizedEmail = String(payload.email).toLowerCase().trim()
+    const normalizedRole = PUBLIC_SIGNUP_ROLES.has(role) ? role : 'patient'
     let user = await User.findOne({ email: normalizedEmail })
     if (!user) {
       // No password on Google-only accounts - store an unusable random hash
@@ -261,7 +268,7 @@ router.post('/google', authLimiter, async (req, res) => {
         _id: user._id,
         email: normalizedEmail,
         full_name: (payload.name || '').trim(),
-        role: 'patient',
+        role: normalizedRole,
       })
     }
 

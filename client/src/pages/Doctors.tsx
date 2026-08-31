@@ -5,8 +5,10 @@ import { useToast } from '../lib/toast'
 import { db } from '../lib/db'
 import { useAuth } from '../lib/auth'
 import type { Doctor, Appointment, Review } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 
 export default function Doctors() {
+  const { t } = useI18n()
   const { data: doctors, loading, error } = useSupabaseQuery<Doctor>('doctors')
   const { data: appointments, refetch: refetchAppts } = useSupabaseQuery<Appointment>('appointments', '*', 'date', false)
   const { data: reviews, refetch: refetchReviews } = useSupabaseQuery<Review>('reviews', '*', 'created_at', false)
@@ -38,15 +40,15 @@ export default function Doctors() {
     })
   }, [doctors, search, specialtyFilter, cityFilter])
 
-  if (loading) return <div><PageHeader title="Find Doctors" subtitle="Search and book appointments with specialists" icon={Stethoscope} /><LoadingState /></div>
-  if (error) return <div><PageHeader title="Find Doctors" subtitle="Search and book appointments with specialists" icon={Stethoscope} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={t('ph_doctors_title')} subtitle={t('ph_doctors_subtitle')} icon={Stethoscope} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={t('ph_doctors_title')} subtitle={t('ph_doctors_subtitle')} icon={Stethoscope} /><ErrorState message={error} /></div>
 
   const upcomingByDoctor = (doctorId: string) => appointments?.filter((a) => a.doctor_id === doctorId && a.status === 'upcoming') ?? []
   const reviewsByDoctor = (doctorId: string) => reviews?.filter((r) => r.doctor_id === doctorId) ?? []
 
   return (
     <div className="fade-in">
-      <PageHeader title="Find Doctors" subtitle="Search and book appointments with specialists" icon={Stethoscope} />
+      <PageHeader title={t('ph_doctors_title')} subtitle={t('ph_doctors_subtitle')} icon={Stethoscope} />
 
       {/* Filters */}
       <div className="card" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>

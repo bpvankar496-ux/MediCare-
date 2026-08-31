@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ShieldPlus, Mail, Lock, User as UserIcon, CircleCheck as CheckCircle, Stethoscope, UserRound, ArrowLeft } from 'lucide-react'
 import { useAuth, type Role } from '../lib/auth'
+import { QuickSettings } from '../components/QuickSettings'
 
 // Bug fix: "Receptionist" used to be a pickable role on public signup, so
 // anyone could give themselves the reception desk. Reception is now a fixed,
@@ -92,13 +93,21 @@ export default function Login({ onBack }: { onBack?: () => void }) {
   const handleGoogleCredential = async (credential: string) => {
     setSubmitting(true)
     setError(null)
-    const result = await signInWithGoogle(credential)
+    // Bug fix: the role picker below (Patient/Doctor) only applied to
+    // email+password signup - the Google button always created a
+    // 'patient' account regardless of what was selected. Now it's passed
+    // through here too (only takes effect for a brand-new account; an
+    // existing Google account keeps its original role).
+    const result = await signInWithGoogle(credential, role)
     setSubmitting(false)
     if (result.error) setError(result.error)
   }
 
   return (
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 20, background: 'var(--bg)' }}>
+      <div style={{ position: 'fixed', top: 16, right: 16 }}>
+        <QuickSettings />
+      </div>
       <div className="card fade-in" style={{ width: '100%', maxWidth: 420, padding: 32, position: 'relative' }}>
         {onBack && (
           <button
@@ -140,30 +149,33 @@ export default function Login({ onBack }: { onBack?: () => void }) {
             </p>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {mode === 'signup' && (
-                <div>
-                  <label className="label">I am a...</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                    {roles.map((r) => (
-                      <button
-                        type="button"
-                        key={r.value}
-                        onClick={() => setRole(r.value)}
-                        style={{
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                          padding: '12px 8px', borderRadius: 'var(--radius-sm)',
-                          border: `1px solid ${role === r.value ? 'var(--primary-500)' : 'var(--border)'}`,
-                          background: role === r.value ? 'var(--primary-50)' : 'var(--surface)',
-                          color: role === r.value ? 'var(--primary-700)' : 'var(--text)',
-                        }}
-                      >
-                        <r.icon size={18} color={role === r.value ? 'var(--primary-600)' : 'var(--text-muted)'} />
-                        <span style={{ fontSize: 12, fontWeight: 600 }}>{r.label}</span>
-                      </button>
-                    ))}
-                  </div>
+              <div>
+                <label className="label">I am a...</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {roles.map((r) => (
+                    <button
+                      type="button"
+                      key={r.value}
+                      onClick={() => setRole(r.value)}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                        padding: '12px 8px', borderRadius: 'var(--radius-sm)',
+                        border: `1px solid ${role === r.value ? 'var(--primary-500)' : 'var(--border)'}`,
+                        background: role === r.value ? 'var(--primary-50)' : 'var(--surface)',
+                        color: role === r.value ? 'var(--primary-700)' : 'var(--text)',
+                      }}
+                    >
+                      <r.icon size={18} color={role === r.value ? 'var(--primary-600)' : 'var(--text-muted)'} />
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>{r.label}</span>
+                    </button>
+                  ))}
                 </div>
-              )}
+                {mode === 'signin' && (
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Only used if you don't have an account yet (incl. via the Google button below).
+                  </p>
+                )}
+              </div>
 
               {mode === 'signup' && (
                 <div>

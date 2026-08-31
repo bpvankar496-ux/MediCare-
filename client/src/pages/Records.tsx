@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { FileText, Plus, Trash2, CircleCheck as CheckCircle, Pill, FlaskConical, File, Download } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { FileText, Plus, Trash2, CircleCheck as CheckCircle, Pill, FlaskConical, File, Download, Link2, ShieldCheck, ShieldAlert, Loader as LoaderIcon } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal, EmptyState } from '../lib/ui'
 import { db } from '../lib/db'
 import type { HealthRecord } from '../lib/types'
+import { getChainStatus, anchorHealthRecord, verifyHealthRecord, type ChainStatus, type VerifyResult } from '../lib/blockchain'
 
 function escapeHtml(str: string) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -62,8 +63,43 @@ export default function Records() {
   const [form, setForm] = useState({ title: '', type: 'document', date: '', doctor: '', hospital: '', notes: '' })
   const [success, setSuccess] = useState(false)
 
+  const [chainStatus, setChainStatus] = useState<ChainStatus | null>(null)
+  const [chainBusyId, setChainBusyId] = useState<string | null>(null)
+  const [verifyResults, setVerifyResults] = useState<Record<string, VerifyResult>>({})
+  const [chainError, setChainError] = useState<string | null>(null)
+
+  useEffect(() => {
+    getChainStatus().then(setChainStatus).catch(() => setChainStatus(null))
+  }, [])
+
   const types = ['all', 'prescription', 'report', 'document', 'discharge', 'scan']
   const filtered = records?.filter((r) => filter === 'all' || r.type === filter) ?? []
+
+  const handleAnchor = async (id: string) => {
+    setChainError(null)
+    setChainBusyId(id)
+    try {
+      await anchorHealthRecord(id)
+      await refetch()
+    } catch (err) {
+      setChainError(err instanceof Error ? err.message : 'Failed to anchor record on-chain')
+    } finally {
+      setChainBusyId(null)
+    }
+  }
+
+  const handleVerify = async (id: string) => {
+    setChainError(null)
+    setChainBusyId(id)
+    try {
+      const result = await verifyHealthRecord(id)
+      setVerifyResults((prev) => ({ ...prev, [id]: result }))
+    } catch (err) {
+      setChainError(err instanceof Error ? err.message : 'Failed to verify record on-chain')
+    } finally {
+      setChainBusyId(null)
+    }
+  }
 
   const addRecord = async () => {
     if (!form.title || !form.date) return
@@ -97,6 +133,17 @@ export default function Records() {
         <button className="btn btn-primary" onClick={() => { setModalOpen(true); setSuccess(false) }}><Plus size={18} /> Add Record</button>
       </div>
 
+      {chainStatus && !chainStatus.configured && (
+        <div className="card" style={{ padding: 12, marginBottom: 16, fontSize: 13, color: 'var(--text-muted)' }}>
+          Blockchain verification isn't set up on this server yet (no contract deployed). See <code>blockchain/README.md</code> to enable it.
+        </div>
+      )}
+      {chainError && (
+        <div className="card" style={{ padding: 12, marginBottom: 16, fontSize: 13, color: 'var(--error-500)' }}>
+          {chainError}
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <EmptyState icon={FileText} title="No health records" subtitle="Add prescriptions, lab reports, discharge summaries, and other medical documents." />
       ) : (
@@ -124,6 +171,62 @@ export default function Records() {
                   {rec.hospital && <span><strong>Hospital:</strong> {rec.hospital}</span>}
                   {rec.notes && <span style={{ marginTop: 4, color: 'var(--text-muted)' }}>{rec.notes}</span>}
                 </div>
+
+                {chainStatus?.configured && (
+                  <div style={{ borderTop: '1px solid var(--border, #eee)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {rec.chain_tx_hash ? (
+                      <>
+                        <span className="badge badge-neutral" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, width: 'fit-content' }}>
+                          <Link2 size={12} /> Anchored on Sepolia
+                        </span>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <a
+                            href={`${chainStatus.explorerBase}/tx/${rec.chain_tx_hash}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ fontSize: 12, color: 'var(--primary-500)' }}
+                          >
+                            View transaction
+                          </a>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            style={{ fontSize: 12, padding: '2px 8px' }}
+                            disabled={chainBusyId === rec.id}
+                            onClick={() => handleVerify(rec.id)}
+                          >
+                            {chainBusyId === rec.id ? <LoaderIcon size={12} className="spin" /> : 'Verify integrity'}
+                          </button>
+                        </div>
+                        {verifyResults[rec.id] && (
+                          <span
+                            style={{
+                              fontSize: 12,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              color: verifyResults[rec.id].matches ? 'var(--success-500)' : 'var(--error-500)',
+                            }}
+                          >
+                            {verifyResults[rec.id].matches ? <ShieldCheck size={14} /> : <ShieldAlert size={14} />}
+                            {verifyResults[rec.id].matches
+                              ? 'Matches on-chain hash - unaltered since anchoring.'
+                              : 'Does NOT match on-chain hash - record was changed after anchoring.'}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: 12, padding: '2px 8px', width: 'fit-content', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                        disabled={chainBusyId === rec.id}
+                        onClick={() => handleAnchor(rec.id)}
+                      >
+                        {chainBusyId === rec.id ? <LoaderIcon size={12} className="spin" /> : <Link2 size={12} />}
+                        {chainBusyId === rec.id ? 'Anchoring...' : 'Anchor on blockchain'}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })}

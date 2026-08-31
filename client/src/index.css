@@ -360,4 +360,5 @@ input, textarea, select {
   .articles-grid { grid-template-columns: 1fr !important; }
   .family-grid { grid-template-columns: 1fr !important; }
   .hide-mobile { display: none !important; }
+  .desktop-topbar { display: none !important; }
 }

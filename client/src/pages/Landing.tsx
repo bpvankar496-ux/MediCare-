@@ -4,6 +4,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useI18n } from '../lib/i18n'
+import { QuickSettings } from '../components/QuickSettings'
 
 const features = [
   { icon: Stethoscope, title: 'Find & Book Doctors', desc: 'Search specialists by city or specialty and book an appointment in seconds.', color: 'var(--primary-500)', bg: 'var(--primary-50)' },
@@ -59,9 +60,10 @@ export default function Landing({ onGetStarted, loggedIn = false }: LandingProps
             <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-h)' }}>MediCare+</span>
           </div>
 
-          <nav className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          <nav className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <a href="#features" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>Features</a>
             <a href="#testimonials" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>Testimonials</a>
+            <QuickSettings />
             {loggedIn ? (
               <button className="btn btn-primary" onClick={onGetStarted}><LayoutDashboard size={16} /> {t('landing_go_to_dashboard')}</button>
             ) : (
@@ -86,6 +88,7 @@ export default function Landing({ onGetStarted, loggedIn = false }: LandingProps
           <div style={{ padding: '0 24px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             <a href="#features" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>Features</a>
             <a href="#testimonials" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>Testimonials</a>
+            <div style={{ margin: '4px 0' }}><QuickSettings /></div>
             {loggedIn ? (
               <button className="btn btn-primary" onClick={onGetStarted}>{t('landing_go_to_dashboard')}</button>
             ) : (

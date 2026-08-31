@@ -6,9 +6,11 @@ import { useToast } from '../lib/toast'
 import { db } from '../lib/db'
 import { downloadInvoicePdf } from '../lib/pdf'
 import { useAuth } from '../lib/auth'
+import { useI18n } from '../lib/i18n'
 import type { LabTest, LabTestBooking } from '../lib/types'
 
 export default function LabTests() {
+  const { t } = useI18n()
   const { data: tests, loading, error } = useSupabaseQuery<LabTest>('lab_tests')
   const { data: bookings, refetch: refetchBookings } = useSupabaseQuery<LabTestBooking>('lab_test_bookings', '*', 'created_at', false)
   const { profile } = useAuth()
@@ -67,14 +69,14 @@ export default function LabTests() {
     showToast('Lab test booking confirmed!', 'success')
   }
 
-  if (loading) return <div><PageHeader title="Lab Tests" subtitle="Book diagnostic tests with home sample collection" icon={FlaskConical} /><LoadingState /></div>
-  if (error) return <div><PageHeader title="Lab Tests" subtitle="Book diagnostic tests with home sample collection" icon={FlaskConical} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={t('ph_lab_tests_title')} subtitle={t('ph_lab_tests_subtitle')} icon={FlaskConical} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={t('ph_lab_tests_title')} subtitle={t('ph_lab_tests_subtitle')} icon={FlaskConical} /><ErrorState message={error} /></div>
 
   const today = new Date().toISOString().split('T')[0]
 
   return (
     <div className="fade-in">
-      <PageHeader title="Lab Tests" subtitle="Book diagnostic tests with home sample collection" icon={FlaskConical} />
+      <PageHeader title={t('ph_lab_tests_title')} subtitle={t('ph_lab_tests_subtitle')} icon={FlaskConical} />
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px' }}>

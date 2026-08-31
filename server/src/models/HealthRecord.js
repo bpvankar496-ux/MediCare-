@@ -14,6 +14,18 @@ const healthRecordSchema = new mongoose.Schema({
   notes: { type: String, default: null },
   file_url: { type: String, default: null },
   created_at: { type: Date, default: Date.now },
+
+  // --- Blockchain anchoring (Ethereum Sepolia testnet) ---
+  // We never put patient data itself on-chain (that would be a serious privacy
+  // problem on a public, permanent ledger). Instead we anchor a keccak256 hash
+  // of the record's fields, so anyone can later prove the record shown by the
+  // app hasn't been silently altered, without ever exposing the PHI on-chain.
+  content_hash: { type: String, default: null }, // 0x-prefixed keccak256 hash that was anchored
+  chain_tx_hash: { type: String, default: null }, // Sepolia transaction hash
+  chain_block_number: { type: Number, default: null },
+  chain_network: { type: String, default: null }, // e.g. 'sepolia'
+  chain_contract_address: { type: String, default: null },
+  anchored_at: { type: Date, default: null },
 })
 
 applyIdTransform(healthRecordSchema)

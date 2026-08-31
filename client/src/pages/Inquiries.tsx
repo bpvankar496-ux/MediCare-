@@ -3,6 +3,7 @@ import { HeartHandshake, Send, CircleCheck as CheckCircle } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, EmptyState } from '../lib/ui'
 import { db } from '../lib/db'
 import { useAuth } from '../lib/auth'
+import { useI18n } from '../lib/i18n'
 
 interface Inquiry {
   id: string
@@ -14,6 +15,7 @@ interface Inquiry {
 }
 
 export default function Inquiries() {
+  const { t } = useI18n()
   const { user, profile } = useAuth()
   const { data: allInquiries, refetch, loading, error } = useSupabaseQuery<Inquiry & { patient_id: string }>('inquiries', '*', 'created_at', false)
   const [form, setForm] = useState({ subject: '', message: '' })
@@ -44,12 +46,12 @@ export default function Inquiries() {
 
   const statusBadge = (s: string) => s === 'open' ? 'badge-warning' : s === 'in_progress' ? 'badge-info' : 'badge-success'
 
-  if (loading) return <div><PageHeader title="Ask Reception" subtitle="Get help from our front desk team" icon={HeartHandshake} /><LoadingState /></div>
-  if (error) return <div><PageHeader title="Ask Reception" subtitle="Get help from our front desk team" icon={HeartHandshake} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={t('ph_inquiries_title')} subtitle={t('ph_inquiries_subtitle')} icon={HeartHandshake} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={t('ph_inquiries_title')} subtitle={t('ph_inquiries_subtitle')} icon={HeartHandshake} /><ErrorState message={error} /></div>
 
   return (
     <div className="fade-in">
-      <PageHeader title="Ask Reception" subtitle="Raise a query and our reception desk will help you out" icon={HeartHandshake} />
+      <PageHeader title={t('ph_inquiries_title')} subtitle={t('ph_inquiries_subtitle')} icon={HeartHandshake} />
 
       <div className="card" style={{ padding: 20, marginBottom: 24 }}>
         <h4 style={{ marginBottom: 14 }}>Submit a new inquiry</h4>

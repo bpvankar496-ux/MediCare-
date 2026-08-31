@@ -1,20 +1,19 @@
 import { useRef, useState } from 'react'
-import { Settings as SettingsIcon, User, KeyRound, Camera, Trash2, Palette, Languages, Sun, Moon, MonitorSmartphone } from 'lucide-react'
+import { Settings as SettingsIcon, User, KeyRound, Camera, Trash2 } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { PageHeader } from '../lib/ui'
-import { useTheme, type ThemeMode } from '../lib/theme'
-import { useI18n, LANGUAGES } from '../lib/i18n'
 import { useToast } from '../lib/toast'
+import { useI18n } from '../lib/i18n'
 
 const MAX_AVATAR_BYTES = 1.5 * 1024 * 1024
 
 // New feature: a dedicated Settings page so users can update their display
-// name, profile picture, password, theme, and language themselves, without
-// needing an admin.
+// name, profile picture, and password. Theme/language moved to the top
+// navbar switcher (client/src/lib/ThemeLanguageSwitcher.tsx) since those
+// get reached for far more often than an account setting.
 export default function Settings() {
+  const { t } = useI18n()
   const { profile, updateProfile, updateAvatar, changePassword } = useAuth()
-  const { theme, setTheme } = useTheme()
-  const { lang, setLang, t } = useI18n()
   const { showToast } = useToast()
 
   const [fullName, setFullName] = useState(profile?.full_name || '')
@@ -103,7 +102,7 @@ export default function Settings() {
 
   return (
     <div>
-      <PageHeader title="Settings" subtitle="Manage your account details" icon={SettingsIcon} />
+      <PageHeader title={t('ph_settings_title')} subtitle={t('ph_settings_subtitle')} icon={SettingsIcon} />
 
       <div style={{ display: 'grid', gap: 20, maxWidth: 480 }}>
         {/* Profile picture */}
@@ -137,52 +136,9 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Appearance */}
-        <div className="card" style={{ padding: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <Palette size={18} color="var(--primary-500)" />
-            <h3>{t('appearance')}</h3>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {([
-              { mode: 'light' as ThemeMode, label: 'Light', icon: Sun },
-              { mode: 'dark' as ThemeMode, label: 'Dark', icon: Moon },
-              { mode: 'system' as ThemeMode, label: 'System', icon: MonitorSmartphone },
-            ]).map(({ mode, label, icon: Icon }) => (
-              <button
-                key={mode}
-                type="button"
-                className={theme === mode ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
-                onClick={() => setTheme(mode)}
-              >
-                <Icon size={14} /> {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Language */}
-        <div className="card" style={{ padding: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <Languages size={18} color="var(--primary-500)" />
-            <h3>{t('language')}</h3>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {LANGUAGES.map((l) => (
-              <button
-                key={l.code}
-                type="button"
-                className={lang === l.code ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
-                onClick={() => setLang(l.code)}
-              >
-                {l.native}
-              </button>
-            ))}
-          </div>
-          <p style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)' }}>
-            Applies to the sidebar navigation and landing page for now — more pages are being translated.
-          </p>
-        </div>
+        {/* Appearance and Language now live in the top navbar (the switcher
+            next to your profile/logout, always visible) instead of being
+            buried here - see client/src/lib/ThemeLanguageSwitcher.tsx. */}
 
         <form onSubmit={handleNameSave} className="card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>

@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth'
 import { db } from '../lib/db'
 import { LoadingState, EmptyState, Modal } from '../lib/ui'
 import Settings from './Settings'
+import { QuickSettings } from '../components/QuickSettings'
 import type { Doctor } from '../lib/types'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -139,7 +140,10 @@ export default function ReceptionistDashboard() {
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{profile?.full_name || profile?.email}</div>
           </div>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={signOut}><LogOut size={16} /> Sign out</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <QuickSettings />
+          <button className="btn btn-ghost btn-sm" onClick={signOut}><LogOut size={16} /> Sign out</button>
+        </div>
       </header>
 
       <main style={{ padding: '28px 24px', maxWidth: 1000, margin: '0 auto' }}>

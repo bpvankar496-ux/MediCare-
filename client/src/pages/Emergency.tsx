@@ -2,8 +2,10 @@ import { useState, useMemo } from 'react'
 import { MapPin, Search, Phone, Clock, Star, Ambulance } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState } from '../lib/ui'
 import type { Hospital } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 
 export default function Emergency() {
+  const { t } = useI18n()
   const { data: hospitals, loading, error } = useSupabaseQuery<Hospital>('hospitals')
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -21,12 +23,12 @@ export default function Emergency() {
     })
   }, [hospitals, search, typeFilter, emergencyOnly])
 
-  if (loading) return <div><PageHeader title="Emergency & Hospitals" subtitle="Find nearby hospitals, emergency rooms, and clinics" icon={MapPin} /><LoadingState /></div>
-  if (error) return <div><PageHeader title="Emergency & Hospitals" subtitle="Find nearby hospitals, emergency rooms, and clinics" icon={MapPin} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={t('ph_emergency_title')} subtitle={t('ph_emergency_subtitle')} icon={MapPin} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={t('ph_emergency_title')} subtitle={t('ph_emergency_subtitle')} icon={MapPin} /><ErrorState message={error} /></div>
 
   return (
     <div className="fade-in">
-      <PageHeader title="Emergency & Hospitals" subtitle="Find nearby hospitals, emergency rooms, and clinics" icon={MapPin} />
+      <PageHeader title={t('ph_emergency_title')} subtitle={t('ph_emergency_subtitle')} icon={MapPin} />
 
       <div className="card" style={{ padding: 20, marginBottom: 20, background: 'var(--error-50)', border: '1px solid var(--error-100)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

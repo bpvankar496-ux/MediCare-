@@ -56,6 +56,64 @@ export const translations: Record<string, Record<Lang, string>> = {
   landing_sign_in: { en: 'Sign In', gu: 'સાઇન ઇન', hi: 'साइन इन' },
   landing_see_features: { en: 'See Features', gu: 'સુવિધાઓ જુઓ', hi: 'सुविधाएं देखें' },
   landing_go_to_dashboard: { en: 'Go to Dashboard', gu: 'ડેશબોર્ડ પર જાઓ', hi: 'डैशबोर्ड पर जाएं' },
+
+  // Page headers (title + subtitle) - shown at the top of every page via
+  // <PageHeader>. Covers the most-visible text on each page even where the
+  // body content underneath isn't fully translated yet.
+  ph_dashboard_title: { en: 'Dashboard', gu: 'ડેશબોર્ડ', hi: 'डैशबोर्ड' },
+  ph_dashboard_subtitle: { en: 'Welcome back! Here is your health overview.', gu: 'ફરી સ્વાગત છે! આ રહ્યું તમારું આરોગ્ય વિહંગાવલોકન.', hi: 'वापसी पर स्वागत है! यह रहा आपका स्वास्थ्य अवलोकन.' },
+  ph_doctors_title: { en: 'Find Doctors', gu: 'ડોક્ટર શોધો', hi: 'डॉक्टर खोजें' },
+  ph_doctors_subtitle: { en: 'Search and book appointments with specialists', gu: 'નિષ્ણાતો સાથે શોધો અને એપોઇન્ટમેન્ટ બુક કરો', hi: 'विशेषज्ञों को खोजें और अपॉइंटमेंट बुक करें' },
+  ph_consultations_title: { en: 'Telemedicine', gu: 'ટેલિમેડિસિન', hi: 'टेलीमेडिसिन' },
+  ph_consultations_subtitle: { en: 'Consult doctors via video, phone, or chat', gu: 'વિડિયો, ફોન અથવા ચેટ દ્વારા ડોક્ટરની સલાહ લો', hi: 'वीडियो, फोन या चैट के ज़रिए डॉक्टर से सलाह लें' },
+  ph_pharmacy_title: { en: 'Pharmacy', gu: 'ફાર્મસી', hi: 'फार्मेसी' },
+  ph_pharmacy_subtitle: { en: 'Order medicines online with home delivery', gu: 'હોમ ડિલિવરી સાથે ઓનલાઇન દવાઓ ઓર્ડર કરો', hi: 'होम डिलीवरी के साथ ऑनलाइन दवाइयाँ ऑर्डर करें' },
+  ph_lab_tests_title: { en: 'Lab Tests', gu: 'લેબ ટેસ્ટ', hi: 'लैब टेस्ट' },
+  ph_lab_tests_subtitle: { en: 'Book diagnostic tests with home sample collection', gu: 'હોમ સેમ્પલ કલેક્શન સાથે ડાયગ્નોસ્ટિક ટેસ્ટ બુક કરો', hi: 'होम सैंपल कलेक्शन के साथ डायग्नोस्टिक टेस्ट बुक करें' },
+  ph_records_title: { en: 'Health Records', gu: 'આરોગ્ય રેકોર્ડ', hi: 'स्वास्थ्य रिकॉर्ड' },
+  ph_records_subtitle: { en: 'Store and access your medical documents', gu: 'તમારા મેડિકલ દસ્તાવેજો સાચવો અને ઍક્સેસ કરો', hi: 'अपने मेडिकल दस्तावेज़ सहेजें और एक्सेस करें' },
+  ph_vitals_title: { en: 'Vitals Tracker', gu: 'વાઈટલ્સ ટ્રેકર', hi: 'वाइटल्स ट्रैकर' },
+  ph_vitals_subtitle: { en: 'Track blood pressure, sugar, weight, and more', gu: 'બ્લડ પ્રેશર, સુગર, વજન અને વધુ ટ્રેક કરો', hi: 'ब्लड प्रेशर, शुगर, वज़न और अधिक ट्रैक करें' },
+  ph_reminders_title: { en: 'Reminders', gu: 'રિમાઇન્ડર', hi: 'रिमाइंडर' },
+  ph_reminders_subtitle: { en: 'Never miss a medicine dose or appointment', gu: 'ક્યારેય દવાનો ડોઝ કે એપોઇન્ટમેન્ટ ચૂકશો નહીં', hi: 'कभी भी दवा की खुराक या अपॉइंटमेंट न चूकें' },
+  ph_symptom_checker_title: { en: 'Symptom Checker', gu: 'લક્ષણ ચકાસણી', hi: 'लक्षण जांच' },
+  ph_symptom_checker_subtitle: { en: 'Identify possible conditions based on your symptoms', gu: 'તમારા લક્ષણોના આધારે શક્ય સ્થિતિઓ ઓળખો', hi: 'अपने लक्षणों के आधार पर संभावित स्थितियाँ पहचानें' },
+  ph_calculators_title: { en: 'Health Tools', gu: 'આરોગ્ય સાધનો', hi: 'स्वास्थ्य उपकरण' },
+  ph_calculators_subtitle: { en: 'BMI, calorie, and other health calculators', gu: 'BMI, કેલરી અને અન્ય આરોગ્ય કેલ્ક્યુલેટર', hi: 'BMI, कैलोरी और अन्य स्वास्थ्य कैलकुलेटर' },
+  ph_emergency_title: { en: 'Emergency', gu: 'ઇમરજન્સી', hi: 'आपातकाल' },
+  ph_emergency_subtitle: { en: 'Quick access to emergency contacts and nearby hospitals', gu: 'ઇમરજન્સી સંપર્કો અને નજીકની હોસ્પિટલોની ઝડપી ઍક્સેસ', hi: 'आपातकालीन संपर्कों और नज़दीकी अस्पतालों तक त्वरित पहुँच' },
+  ph_articles_title: { en: 'Health Library', gu: 'આરોગ્ય લાઇબ્રેરી', hi: 'स्वास्थ्य लाइब्रेरी' },
+  ph_articles_subtitle: { en: 'Read trustworthy articles on health and wellness', gu: 'આરોગ્ય અને સુખાકારી પર વિશ્વસનીય લેખો વાંચો', hi: 'स्वास्थ्य और कल्याण पर भरोसेमंद लेख पढ़ें' },
+  ph_family_title: { en: 'Family Members', gu: 'કુટુંબના સભ્યો', hi: 'परिवार के सदस्य' },
+  ph_family_subtitle: { en: "Manage your family's health from one account", gu: 'એક જ ખાતામાંથી તમારા કુટુંબનું આરોગ્ય સંભાળો', hi: 'एक ही खाते से अपने परिवार का स्वास्थ्य प्रबंधित करें' },
+  ph_inquiries_title: { en: 'Ask Reception', gu: 'રિસેપ્શનને પૂછો', hi: 'रिसेप्शन से पूछें' },
+  ph_inquiries_subtitle: { en: 'Send a question to the front desk', gu: 'ફ્રન્ટ ડેસ્કને પ્રશ્ન મોકલો', hi: 'फ्रंट डेस्क को सवाल भेजें' },
+  ph_settings_title: { en: 'Settings', gu: 'સેટિંગ્સ', hi: 'सेटिंग्स' },
+  ph_settings_subtitle: { en: 'Manage your account details', gu: 'તમારા ખાતાની વિગતો સંભાળો', hi: 'अपने खाते का विवरण प्रबंधित करें' },
+
+  // AI Symptom Analyzer (Symptom Checker page) - the AI's own reply is
+  // translated server-side (see server/src/routes/ai.js); these are the
+  // static labels around it.
+  ai_symptom_title: { en: 'AI Symptom Analysis', gu: 'AI લક્ષણ વિશ્લેષણ', hi: 'AI लक्षण विश्लेषण' },
+  ai_symptom_subtitle: {
+    en: "Describe how you're feeling in your own words — the AI will suggest possible causes and how urgently to see a doctor.",
+    gu: 'તમે કેવું અનુભવો છો તે તમારા પોતાના શબ્દોમાં વર્ણવો — AI શક્ય કારણો અને ડોક્ટરને કેટલી તાત્કાલિકતાથી મળવું તે સૂચવશે.',
+    hi: 'आप कैसा महसूस कर रहे हैं यह अपने शब्दों में बताएं — AI संभावित कारण और डॉक्टर से कितनी जल्दी मिलना है यह सुझाएगा।',
+  },
+  ai_symptom_placeholder: {
+    en: 'e.g. I have had a mild fever and sore throat for two days, plus a headache...',
+    gu: 'દા.ત. મને બે દિવસથી હળવો તાવ અને ગળામાં દુખાવો છે, સાથે માથાનો દુખાવો પણ...',
+    hi: 'उदा. मुझे दो दिन से हल्का बुखार और गले में खराश है, साथ ही सिरदर्द भी...',
+  },
+  ai_symptom_analyzing: { en: 'Analyzing...', gu: 'વિશ્લેષણ થઈ રહ્યું છે...', hi: 'विश्लेषण हो रहा है...' },
+  ai_symptom_analyze: { en: 'Analyze Symptoms', gu: 'લક્ષણોનું વિશ્લેષણ કરો', hi: 'लक्षणों का विश्लेषण करें' },
+  ai_symptom_urgency: { en: 'urgency', gu: 'તાત્કાલિકતા', hi: 'तात्कालिकता' },
+  ai_symptom_emergency: {
+    en: 'This may be a medical emergency — please call emergency services or visit the nearest ER immediately.',
+    gu: 'આ તબીબી ઇમરજન્સી હોઈ શકે છે — કૃપા કરીને ઇમરજન્સી સેવાઓને કૉલ કરો અથવા તાત્કાલિક નજીકના ER ની મુલાકાત લો.',
+    hi: 'यह मेडिकल इमरजेंसी हो सकती है — कृपया आपातकालीन सेवाओं को कॉल करें या तुरंत नज़दीकी ER जाएं।',
+  },
+  ai_symptom_recommendation: { en: 'Recommendation', gu: 'ભલામણ', hi: 'सिफारिश' },
 }
 
 export type TranslationKey = keyof typeof translations
