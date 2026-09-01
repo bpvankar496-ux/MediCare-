@@ -36,7 +36,7 @@ if (!MONGODB_URI) {
 
 const app = express()
 app.use(cors(corsOptions))
-app.use(express.json({ limit: '5mb' }))
+app.use(express.json({ limit: '8mb' })) // headroom for base64-encoded health-record file attachments (see routes/blockchain.js)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 app.use('/api/auth', authRoutes)

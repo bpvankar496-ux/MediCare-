@@ -24,9 +24,9 @@
 import { ethers } from 'ethers'
 
 const CONTRACT_ABI = [
-  'function anchorRecord(bytes32 recordId, bytes32 dataHash) external',
-  'function getAnchor(bytes32 recordId) external view returns (bytes32 dataHash, uint256 timestamp, address anchoredBy, bool exists)',
-  'event RecordAnchored(bytes32 indexed recordId, bytes32 dataHash, address indexed anchoredBy, uint256 timestamp)',
+  'function anchorRecord(bytes32 recordId, bytes32 dataHash, string fileCID) external',
+  'function getAnchor(bytes32 recordId) external view returns (bytes32 dataHash, string fileCID, uint256 timestamp, address anchoredBy, bool exists)',
+  'event RecordAnchored(bytes32 indexed recordId, bytes32 dataHash, string fileCID, address indexed anchoredBy, uint256 timestamp)',
 ]
 
 const NETWORK_NAME = 'sepolia'
@@ -82,22 +82,27 @@ export function computeRecordHash(record) {
     hospital: record.hospital ?? null,
     notes: record.notes ?? null,
     file_url: record.file_url ?? null,
+    ipfs_cid: record.ipfs_cid ?? null,
   })
   return ethers.keccak256(ethers.toUtf8Bytes(canonical))
 }
 
-/// Sends a real transaction to Sepolia anchoring this record's hash.
-/// Returns tx hash + block number once mined, plus a ready-to-use explorer link.
+/// Sends a real transaction to Sepolia anchoring this record's hash, along
+/// with the IPFS CID of its attached file (empty string if it has none/isn't
+/// on IPFS yet). Returns tx hash + block number once mined, plus a
+/// ready-to-use explorer link.
 export async function anchorRecord(recordId, record) {
   const contract = getContract()
   const dataHash = computeRecordHash(record)
   const idBytes32 = recordIdToBytes32(recordId)
+  const fileCID = record.ipfs_cid || ''
 
-  const tx = await contract.anchorRecord(idBytes32, dataHash)
+  const tx = await contract.anchorRecord(idBytes32, dataHash, fileCID)
   const receipt = await tx.wait()
 
   return {
     contentHash: dataHash,
+    fileCID,
     txHash: receipt.hash,
     blockNumber: receipt.blockNumber,
     network: NETWORK_NAME,
@@ -114,7 +119,7 @@ export async function verifyRecord(recordId, record) {
   const idBytes32 = recordIdToBytes32(recordId)
   const currentHash = computeRecordHash(record)
 
-  const [onChainHash, timestamp, anchoredBy, exists] = await contract.getAnchor(idBytes32)
+  const [onChainHash, onChainFileCID, timestamp, anchoredBy, exists] = await contract.getAnchor(idBytes32)
 
   if (!exists) {
     return { anchored: false, matches: false, currentHash }
@@ -124,6 +129,7 @@ export async function verifyRecord(recordId, record) {
     anchored: true,
     matches: onChainHash.toLowerCase() === currentHash.toLowerCase(),
     onChainHash,
+    onChainFileCID,
     currentHash,
     anchoredBy,
     anchoredAt: new Date(Number(timestamp) * 1000).toISOString(),

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { FileText, Plus, Trash2, CircleCheck as CheckCircle, Pill, FlaskConical, File, Download, Link2, ShieldCheck, ShieldAlert, Loader as LoaderIcon } from 'lucide-react'
+import { FileText, Plus, Trash2, CircleCheck as CheckCircle, Pill, FlaskConical, File, Download, Link2, ShieldCheck, ShieldAlert, Loader as LoaderIcon, Paperclip, Eye, X, UploadCloud } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal, EmptyState } from '../lib/ui'
 import { db } from '../lib/db'
 import type { HealthRecord } from '../lib/types'
-import { getChainStatus, anchorHealthRecord, verifyHealthRecord, type ChainStatus, type VerifyResult } from '../lib/blockchain'
+import { getChainStatus, anchorHealthRecord, verifyHealthRecord, uploadHealthRecordFileToIpfs, type ChainStatus, type VerifyResult } from '../lib/blockchain'
 
 function escapeHtml(str: string) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -56,11 +56,43 @@ const typeIcons: Record<string, React.ComponentType<{ size?: number; color?: str
   prescription: Pill, report: FlaskConical, document: File, discharge: FileText, scan: FileText,
 }
 
+// `file_url` is stored as a base64 data: URL (see MAX_FILE_BYTES note below).
+// Browsers block navigating a new tab directly to a data: URL for security
+// reasons, so clicking a plain <a href="data:..."> silently does nothing in
+// Chrome/Edge. To actually view the file we convert the data URL to a Blob
+// and open a short-lived object URL instead, which browsers allow.
+function openDataUrl(dataUrl: string) {
+  try {
+    const [meta, base64] = dataUrl.split(',')
+    const mimeMatch = meta.match(/:(.*?);/)
+    const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream'
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    const blob = new Blob([bytes], { type: mime })
+    const objectUrl = URL.createObjectURL(blob)
+    window.open(objectUrl, '_blank')
+    // Revoke after a delay so the new tab has time to load the file first.
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000)
+  } catch {
+    window.open(dataUrl, '_blank')
+  }
+}
+
+// Same limit/approach as the avatar upload in Settings.tsx: read the file as a
+// base64 data URL client-side and store it directly on the record (no
+// separate file-storage service in this app). Documents are allowed a bit
+// more room than the profile picture since scans/PDFs are usually bigger.
+const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5MB
+const ACCEPTED_FILE_TYPES = '.pdf,.jpg,.jpeg,.png,.webp'
+
 export default function Records() {
   const { data: records, refetch, loading, error } = useSupabaseQuery<HealthRecord>('health_records', '*', 'date', false)
   const [modalOpen, setModalOpen] = useState(false)
   const [filter, setFilter] = useState('all')
-  const [form, setForm] = useState({ title: '', type: 'document', date: '', doctor: '', hospital: '', notes: '' })
+  const [form, setForm] = useState({ title: '', type: 'document', date: '', doctor: '', hospital: '', notes: '', file_url: null as string | null })
+  const [fileName, setFileName] = useState<string | null>(null)
+  const [fileError, setFileError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
   const [chainStatus, setChainStatus] = useState<ChainStatus | null>(null)
@@ -88,6 +120,24 @@ export default function Records() {
     }
   }
 
+  // Pins the record's locally-stored file (currently a base64 data: URL) to
+  // IPFS via the backend, storing the resulting CID + gateway URL on the
+  // record. Do this before anchoring so the anchor transaction includes the
+  // CID on-chain (see anchorHealthRecord / blockchain.js).
+  const handleUploadToIpfs = async (rec: HealthRecord) => {
+    if (!rec.file_url) return
+    setChainError(null)
+    setChainBusyId(rec.id)
+    try {
+      await uploadHealthRecordFileToIpfs(rec.id, rec.file_url, rec.title)
+      await refetch()
+    } catch (err) {
+      setChainError(err instanceof Error ? err.message : 'Failed to upload file to IPFS')
+    } finally {
+      setChainBusyId(null)
+    }
+  }
+
   const handleVerify = async (id: string) => {
     setChainError(null)
     setChainBusyId(id)
@@ -101,15 +151,42 @@ export default function Records() {
     }
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-selecting the same file later
+    if (!file) return
+    setFileError(null)
+    if (file.size > MAX_FILE_BYTES) {
+      setFileError('File must be under 5MB')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setForm((f) => ({ ...f, file_url: reader.result as string }))
+      setFileName(file.name)
+    }
+    reader.onerror = () => setFileError('Could not read that file')
+    reader.readAsDataURL(file)
+  }
+
+  const removeFile = () => {
+    setForm((f) => ({ ...f, file_url: null }))
+    setFileName(null)
+    setFileError(null)
+  }
+
   const addRecord = async () => {
     if (!form.title || !form.date) return
     const { error } = await db.from('health_records').insert({
       title: form.title, type: form.type, date: form.date,
       doctor: form.doctor || null, hospital: form.hospital || null, notes: form.notes || null,
+      file_url: form.file_url || null,
     })
     if (error) return
     setSuccess(true); refetch()
-    setForm({ title: '', type: 'document', date: '', doctor: '', hospital: '', notes: '' })
+    setForm({ title: '', type: 'document', date: '', doctor: '', hospital: '', notes: '', file_url: null })
+    setFileName(null)
+    setFileError(null)
   }
 
   const deleteRecord = async (id: string) => {
@@ -170,10 +247,41 @@ export default function Records() {
                   {rec.doctor && <span><strong>Doctor:</strong> {rec.doctor}</span>}
                   {rec.hospital && <span><strong>Hospital:</strong> {rec.hospital}</span>}
                   {rec.notes && <span style={{ marginTop: 4, color: 'var(--text-muted)' }}>{rec.notes}</span>}
+                  {rec.file_url && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Once uploaded to IPFS, file_url is a real https:// gateway
+                        // link and can be opened directly; before that it's a
+                        // base64 data: URL, which needs the Blob workaround.
+                        if (rec.file_url!.startsWith('data:')) openDataUrl(rec.file_url as string)
+                        else window.open(rec.file_url as string, '_blank')
+                      }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, width: 'fit-content', color: 'var(--primary-500)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+                    >
+                      <Eye size={13} /> View attached file
+                    </button>
+                  )}
+                  {rec.ipfs_cid && (
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      Stored on IPFS: <code>{rec.ipfs_cid.slice(0, 10)}…</code>
+                    </span>
+                  )}
                 </div>
 
                 {chainStatus?.configured && (
                   <div style={{ borderTop: '1px solid var(--border, #eee)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {chainStatus.ipfsConfigured && rec.file_url?.startsWith('data:') && (
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: 12, padding: '2px 8px', width: 'fit-content', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                        disabled={chainBusyId === rec.id}
+                        onClick={() => handleUploadToIpfs(rec)}
+                      >
+                        {chainBusyId === rec.id ? <LoaderIcon size={12} className="spin" /> : <UploadCloud size={12} />}
+                        {chainBusyId === rec.id ? 'Uploading...' : 'Upload file to IPFS'}
+                      </button>
+                    )}
                     {rec.chain_tx_hash ? (
                       <>
                         <span className="badge badge-neutral" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, width: 'fit-content' }}>
@@ -211,6 +319,11 @@ export default function Records() {
                             {verifyResults[rec.id].matches
                               ? 'Matches on-chain hash - unaltered since anchoring.'
                               : 'Does NOT match on-chain hash - record was changed after anchoring.'}
+                          </span>
+                        )}
+                        {verifyResults[rec.id]?.onChainFileCID && (
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                            On-chain file CID: <code>{verifyResults[rec.id].onChainFileCID}</code>
                           </span>
                         )}
                       </>
@@ -257,6 +370,25 @@ export default function Records() {
               <div><label className="label">Hospital</label><input className="input" value={form.hospital} onChange={(e) => setForm({ ...form, hospital: e.target.value })} placeholder="Hospital name" /></div>
             </div>
             <div><label className="label">Notes</label><textarea className="input" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any additional notes" /></div>
+
+            <div>
+              <label className="label">Attach file (PDF or image, optional)</label>
+              {form.file_url ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                  <Paperclip size={14} color="var(--text-muted)" />
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fileName}</span>
+                  <button type="button" className="btn btn-ghost btn-sm" style={{ padding: 4 }} onClick={removeFile}>
+                    <X size={14} color="var(--error-500)" />
+                  </button>
+                </div>
+              ) : (
+                <label className="btn btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <Paperclip size={16} /> Choose file
+                  <input type="file" accept={ACCEPTED_FILE_TYPES} onChange={handleFileSelect} style={{ display: 'none' }} />
+                </label>
+              )}
+              {fileError && <div style={{ fontSize: 12, color: 'var(--error-500)', marginTop: 4 }}>{fileError}</div>}
+            </div>
           </div>
         )}
       </Modal>

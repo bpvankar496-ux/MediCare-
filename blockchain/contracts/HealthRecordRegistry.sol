@@ -12,6 +12,7 @@ pragma solidity ^0.8.20;
 contract HealthRecordRegistry {
     struct Anchor {
         bytes32 dataHash;   // keccak256 hash of the canonical record JSON
+        string fileCID;     // IPFS content ID of the attached file (empty if none)
         uint256 timestamp;  // block timestamp when it was anchored
         address anchoredBy; // wallet that submitted the anchor
         bool exists;
@@ -27,7 +28,7 @@ contract HealthRecordRegistry {
     // recordId (keccak256 of the Mongo _id string) => Anchor
     mapping(bytes32 => Anchor) private anchors;
 
-    event RecordAnchored(bytes32 indexed recordId, bytes32 dataHash, address indexed anchoredBy, uint256 timestamp);
+    event RecordAnchored(bytes32 indexed recordId, bytes32 dataHash, string fileCID, address indexed anchoredBy, uint256 timestamp);
     event AnchorerUpdated(address indexed anchorer, bool allowed);
     event OwnerUpdated(address indexed newOwner);
 
@@ -61,27 +62,34 @@ contract HealthRecordRegistry {
         emit OwnerUpdated(newOwner);
     }
 
-    /// @notice Anchors (or re-anchors) the hash for a given record.
+    /// @notice Anchors (or re-anchors) the hash for a given record, together
+    ///         with the IPFS CID of its attached file (if any). The CID is
+    ///         stored on-chain in plaintext (IPFS CIDs are not secret - they
+    ///         are pointers to content that is already public on IPFS once
+    ///         pinned), so anyone can independently fetch the exact file
+    ///         version that was anchored, straight from the blockchain
+    ///         record, without trusting this app's database.
     /// @dev Re-anchoring is allowed (e.g. a doctor legitimately corrects a
     ///      record); the frontend/backend keeps its own history in MongoDB
     ///      so the previous anchor is not lost, only superseded here.
-    function anchorRecord(bytes32 recordId, bytes32 dataHash) external onlyAnchorer {
+    function anchorRecord(bytes32 recordId, bytes32 dataHash, string calldata fileCID) external onlyAnchorer {
         anchors[recordId] = Anchor({
             dataHash: dataHash,
+            fileCID: fileCID,
             timestamp: block.timestamp,
             anchoredBy: msg.sender,
             exists: true
         });
-        emit RecordAnchored(recordId, dataHash, msg.sender, block.timestamp);
+        emit RecordAnchored(recordId, dataHash, fileCID, msg.sender, block.timestamp);
     }
 
     /// @notice Reads back what's anchored for a record.
     function getAnchor(bytes32 recordId)
         external
         view
-        returns (bytes32 dataHash, uint256 timestamp, address anchoredBy, bool exists)
+        returns (bytes32 dataHash, string memory fileCID, uint256 timestamp, address anchoredBy, bool exists)
     {
         Anchor memory a = anchors[recordId];
-        return (a.dataHash, a.timestamp, a.anchoredBy, a.exists);
+        return (a.dataHash, a.fileCID, a.timestamp, a.anchoredBy, a.exists);
     }
 }
