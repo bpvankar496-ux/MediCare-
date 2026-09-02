@@ -6,13 +6,13 @@ import type { Vital } from '../lib/types'
 import { useI18n } from '../lib/i18n'
 
 const vitalTypes = [
-  { type: 'Blood Pressure', unit: 'mmHg', icon: Heart, color: 'var(--error-500)', bg: 'var(--error-50)' },
-  { type: 'Heart Rate', unit: 'bpm', icon: Heart, color: 'var(--primary-500)', bg: 'var(--primary-50)' },
-  { type: 'Blood Sugar', unit: 'mg/dL', icon: Droplet, color: 'var(--accent-500)', bg: 'var(--accent-50)' },
-  { type: 'Weight', unit: 'kg', icon: Weight, color: 'var(--secondary-500)', bg: 'var(--secondary-50)' },
-  { type: 'Temperature', unit: '°C', icon: Thermometer, color: 'var(--warning-500)', bg: 'var(--warning-50)' },
-  { type: 'Oxygen Level', unit: '%', icon: Gauge, color: 'var(--success-500)', bg: 'var(--success-50)' },
-]
+  { type: 'Blood Pressure', unit: 'mmHg', icon: Heart, color: 'var(--error-500)', bg: 'var(--error-50)', key: 'vt_bp' },
+  { type: 'Heart Rate', unit: 'bpm', icon: Heart, color: 'var(--primary-500)', bg: 'var(--primary-50)', key: 'vt_hr' },
+  { type: 'Blood Sugar', unit: 'mg/dL', icon: Droplet, color: 'var(--accent-500)', bg: 'var(--accent-50)', key: 'vt_sugar' },
+  { type: 'Weight', unit: 'kg', icon: Weight, color: 'var(--secondary-500)', bg: 'var(--secondary-50)', key: 'vt_weight' },
+  { type: 'Temperature', unit: '°C', icon: Thermometer, color: 'var(--warning-500)', bg: 'var(--warning-50)', key: 'vt_temp' },
+  { type: 'Oxygen Level', unit: '%', icon: Gauge, color: 'var(--success-500)', bg: 'var(--success-50)', key: 'vt_oxygen' },
+] as const
 
 export default function Vitals() {
   const { t } = useI18n()
@@ -47,7 +47,7 @@ export default function Vitals() {
       <PageHeader title={t('ph_vitals_title')} subtitle={t('ph_vitals_subtitle')} icon={Activity} />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
-        <button className="btn btn-primary" onClick={() => setModalOpen(true)}><Plus size={18} /> Record Vital</button>
+        <button className="btn btn-primary" onClick={() => setModalOpen(true)}><Plus size={18} /> {t('vt_record_vital')}</button>
       </div>
 
       {/* Quick stats cards */}
@@ -60,7 +60,7 @@ export default function Vitals() {
                 <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-sm)', background: vt.bg, display: 'grid', placeItems: 'center' }}>
                   <vt.icon size={18} color={vt.color} />
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{vt.type}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{t(vt.key)}</span>
               </div>
               {latest ? (
                 <>
@@ -68,7 +68,7 @@ export default function Vitals() {
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{new Date(latest.recorded_at).toLocaleDateString()}</div>
                 </>
               ) : (
-                <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>No data yet</div>
+                <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>{t('vt_no_data')}</div>
               )}
             </div>
           )
@@ -78,15 +78,15 @@ export default function Vitals() {
       {/* History */}
       {vitals && vitals.length > 0 ? (
         <div>
-          <h3 style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}><TrendingUp size={18} color="var(--primary-500)" /> Vital History</h3>
+          <h3 style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}><TrendingUp size={18} color="var(--primary-500)" /> {t('vt_history')}</h3>
           <div className="card" style={{ overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ background: 'var(--neutral-50)', textAlign: 'left' }}>
-                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>Type</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>Value</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>Date</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>Notes</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>{t('vt_col_type')}</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>{t('vt_col_value')}</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>{t('vt_col_date')}</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>{t('vt_col_notes')}</th>
                   <th style={{ padding: '12px 16px' }}></th>
                 </tr>
               </thead>
@@ -105,24 +105,24 @@ export default function Vitals() {
           </div>
         </div>
       ) : (
-        <EmptyState icon={Activity} title="No vitals recorded" subtitle="Start tracking your blood pressure, heart rate, blood sugar, and other health metrics." />
+        <EmptyState icon={Activity} title={t('vt_empty_title')} subtitle={t('vt_empty_subtitle')} />
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Record Vital Sign"
-        footer={<><button className="btn btn-ghost" onClick={() => setModalOpen(false)}>Cancel</button><button className="btn btn-primary" onClick={addVital} disabled={!form.value}>Save</button></>}
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('vt_modal_title')}
+        footer={<><button className="btn btn-ghost" onClick={() => setModalOpen(false)}>{t('vt_cancel')}</button><button className="btn btn-primary" onClick={addVital} disabled={!form.value}>{t('vt_save')}</button></>}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label className="label">Vital Type</label>
+            <label className="label">{t('vt_field_type')}</label>
             <select className="input" value={form.type} onChange={(e) => {
               const vt = vitalTypes.find((t) => t.type === e.target.value)!
               setForm({ ...form, type: e.target.value, unit: vt.unit })
             }}>
-              {vitalTypes.map((vt) => <option key={vt.type} value={vt.type}>{vt.type}</option>)}
+              {vitalTypes.map((vt) => <option key={vt.type} value={vt.type}>{t(vt.key)}</option>)}
             </select>
           </div>
-          <div><label className="label">Value *</label><input className="input" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder={`e.g. 120/80 (${form.unit})`} /></div>
-          <div><label className="label">Notes</label><input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional notes" /></div>
+          <div><label className="label">{t('vt_field_value')}</label><input className="input" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder={`e.g. 120/80 (${form.unit})`} /></div>
+          <div><label className="label">{t('vt_col_notes')}</label><input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={t('vt_field_notes_placeholder')} /></div>
         </div>
       </Modal>
     </div>

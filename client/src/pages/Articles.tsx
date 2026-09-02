@@ -31,15 +31,15 @@ export default function Articles() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px' }}>
           <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input className="input" style={{ paddingLeft: 40 }} placeholder="Search articles..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input" style={{ paddingLeft: 40 }} placeholder={t('ar_search_placeholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <select className="input" style={{ width: 'auto' }} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-          {categories.map((c) => <option key={c} value={c}>{c === 'all' ? 'All Categories' : c}</option>)}
+          {categories.map((c) => <option key={c} value={c}>{c === 'all' ? t('ar_all_categories') : c}</option>)}
         </select>
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={BookOpen} title="No articles found" subtitle="Try a different search or category." />
+        <EmptyState icon={BookOpen} title={t('ar_empty_title')} subtitle={t('ar_empty_subtitle')} />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }} className="articles-grid">
           {filtered.map((a) => (
@@ -64,7 +64,7 @@ export default function Articles() {
       )}
 
       <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.title ?? ''}
-        footer={<button className="btn btn-primary" onClick={() => setSelected(null)}>Close</button>}>
+        footer={<button className="btn btn-primary" onClick={() => setSelected(null)}>{t('ar_close')}</button>}>
         {selected && (
           <div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>

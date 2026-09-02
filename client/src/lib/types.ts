@@ -94,6 +94,7 @@ export interface HealthRecord {
   hospital: string | null
   notes: string | null
   file_url: string | null
+  ipfs_cid?: string | null
   created_at: string
   content_hash?: string | null
   chain_tx_hash?: string | null

@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { ShieldPlus, Mail, Lock, User as UserIcon, CircleCheck as CheckCircle, Stethoscope, UserRound, ArrowLeft } from 'lucide-react'
 import { useAuth, type Role } from '../lib/auth'
 import { QuickSettings } from '../components/QuickSettings'
+import { useI18n } from '../lib/i18n'
 
 // Bug fix: "Receptionist" used to be a pickable role on public signup, so
 // anyone could give themselves the reception desk. Reception is now a fixed,
 // admin-only account (see server/.env RECEPTION_EMAIL/RECEPTION_PASSWORD) -
 // the public form only ever creates patients or doctors.
-const roles: { value: Role; label: string; icon: React.ComponentType<{ size?: number; color?: string }> }[] = [
-  { value: 'patient', label: 'Patient', icon: UserRound },
-  { value: 'doctor', label: 'Doctor', icon: Stethoscope },
+const roles: { value: Role; key: 'lg_role_patient' | 'lg_role_doctor'; icon: React.ComponentType<{ size?: number; color?: string }> }[] = [
+  { value: 'patient', key: 'lg_role_patient', icon: UserRound },
+  { value: 'doctor', key: 'lg_role_doctor', icon: Stethoscope },
 ]
 
 const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) || ''
@@ -64,6 +65,7 @@ function GoogleSignInButton({ onCredential }: { onCredential: (credential: strin
 }
 
 export default function Login({ onBack }: { onBack?: () => void }) {
+  const { t } = useI18n()
   const { signIn, signUp, signInWithGoogle } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [fullName, setFullName] = useState('')
@@ -76,11 +78,11 @@ export default function Login({ onBack }: { onBack?: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email || !password) { setError('Please enter both email and password'); return }
+    if (!email || !password) { setError(t('lg_err_email_password')); return }
     if (mode === 'signup') {
       const strong = password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password)
-      if (!strong) { setError('Password must be at least 8 characters and include a letter and a number'); return }
-      if (!fullName.trim()) { setError('Please enter your full name'); return }
+      if (!strong) { setError(t('lg_err_password_weak')); return }
+      if (!fullName.trim()) { setError(t('lg_err_full_name')); return }
     }
     setSubmitting(true)
     setError(null)
@@ -115,7 +117,7 @@ export default function Login({ onBack }: { onBack?: () => void }) {
             className="btn btn-ghost btn-sm"
             style={{ position: 'absolute', top: 16, left: 16, padding: '6px 10px' }}
           >
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={16} /> {t('lg_back')}
           </button>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, justifyContent: 'center' }}>
@@ -124,7 +126,7 @@ export default function Login({ onBack }: { onBack?: () => void }) {
           </div>
           <div>
             <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-h)' }}>MediCare+</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Your Health Hub</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('lg_tagline')}</div>
           </div>
         </div>
 
@@ -133,24 +135,24 @@ export default function Login({ onBack }: { onBack?: () => void }) {
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--success-50)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
               <CheckCircle size={28} color="var(--success-500)" />
             </div>
-            <h3 style={{ marginBottom: 8 }}>Account created</h3>
+            <h3 style={{ marginBottom: 8 }}>{t('lg_account_created')}</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 20 }}>
-              You're signed in and ready to go.
+              {t('lg_signed_in_ready')}
             </p>
             <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => { setSignupDone(false); setMode('signin') }}>
-              Go to sign in
+              {t('lg_go_to_signin')}
             </button>
           </div>
         ) : (
           <>
-            <h2 style={{ textAlign: 'center', marginBottom: 4 }}>{mode === 'signin' ? 'Welcome back' : 'Create your account'}</h2>
+            <h2 style={{ textAlign: 'center', marginBottom: 4 }}>{mode === 'signin' ? t('lg_welcome_back') : t('lg_create_account')}</h2>
             <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
-              {mode === 'signin' ? 'Sign in to access your health dashboard' : 'Sign up to get started'}
+              {mode === 'signin' ? t('lg_signin_subtitle') : t('lg_signup_subtitle')}
             </p>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label className="label">I am a...</label>
+                <label className="label">{t('lg_i_am_a')}</label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {roles.map((r) => (
                     <button
@@ -166,60 +168,60 @@ export default function Login({ onBack }: { onBack?: () => void }) {
                       }}
                     >
                       <r.icon size={18} color={role === r.value ? 'var(--primary-600)' : 'var(--text-muted)'} />
-                      <span style={{ fontSize: 12, fontWeight: 600 }}>{r.label}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>{t(r.key)}</span>
                     </button>
                   ))}
                 </div>
                 {mode === 'signin' && (
                   <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                    Only used if you don't have an account yet (incl. via the Google button below).
+                    {t('lg_role_hint')}
                   </p>
                 )}
               </div>
 
               {mode === 'signup' && (
                 <div>
-                  <label className="label">Full Name</label>
+                  <label className="label">{t('lg_full_name')}</label>
                   <div style={{ position: 'relative' }}>
                     <UserIcon size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input className="input" style={{ paddingLeft: 36 }} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your full name" autoComplete="name" />
+                    <input className="input" style={{ paddingLeft: 36 }} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t('lg_full_name_placeholder')} autoComplete="name" />
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="label">Email</label>
+                <label className="label">{t('lg_email')}</label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input className="input" style={{ paddingLeft: 36 }} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
                 </div>
               </div>
               <div>
-                <label className="label">Password</label>
+                <label className="label">{t('lg_password')}</label>
                 <div style={{ position: 'relative' }}>
                   <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input className="input" style={{ paddingLeft: 36 }} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === 'signup' ? 'At least 8 characters, incl. a letter & number' : 'Your password'} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} />
+                  <input className="input" style={{ paddingLeft: 36 }} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === 'signup' ? t('lg_password_placeholder_signup') : t('lg_password_placeholder_signin')} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} />
                 </div>
               </div>
 
               {error && <p style={{ color: 'var(--error-600)', fontSize: 13 }}>{error}</p>}
 
               <button className="btn btn-primary" type="submit" disabled={submitting} style={{ width: '100%', marginTop: 4 }}>
-                {submitting ? (mode === 'signin' ? 'Signing in...' : 'Creating account...') : (mode === 'signin' ? 'Sign In' : 'Sign Up')}
+                {submitting ? (mode === 'signin' ? t('lg_signing_in') : t('lg_creating_account')) : (mode === 'signin' ? t('lg_sign_in') : t('lg_sign_up'))}
               </button>
             </form>
 
             <GoogleSignInButton onCredential={handleGoogleCredential} />
 
             <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-muted)', marginTop: 20 }}>
-              {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+              {mode === 'signin' ? t('lg_no_account') : t('lg_have_account')}
               <a href="#" onClick={(e) => { e.preventDefault(); setError(null); setMode(mode === 'signin' ? 'signup' : 'signin') }}>
-                {mode === 'signin' ? 'Sign up' : 'Sign in'}
+                {mode === 'signin' ? t('lg_sign_up') : t('lg_sign_in')}
               </a>
             </p>
             {mode === 'signup' && (
               <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
-                Reception desk accounts are set up by the clinic admin and aren't available here.
+                {t('lg_reception_note')}
               </p>
             )}
           </>

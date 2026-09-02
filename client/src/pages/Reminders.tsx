@@ -75,13 +75,13 @@ export default function Reminders() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         {permission === 'granted' ? (
-          <span className="badge badge-success"><Bell size={13} /> Notifications on</span>
+          <span className="badge badge-success"><Bell size={13} /> {t('rm_notifications_on')}</span>
         ) : permission === 'denied' ? (
-          <span className="badge badge-neutral"><BellOff size={13} /> Notifications blocked in browser settings</span>
+          <span className="badge badge-neutral"><BellOff size={13} /> {t('rm_notifications_blocked')}</span>
         ) : (
-          <button className="btn btn-secondary btn-sm" onClick={requestPermission}><Bell size={15} /> Enable reminder notifications</button>
+          <button className="btn btn-secondary btn-sm" onClick={requestPermission}><Bell size={15} /> {t('rm_enable_notifications')}</button>
         )}
-        <button className="btn btn-primary" onClick={() => setModalOpen(true)}><Plus size={18} /> Add Reminder</button>
+        <button className="btn btn-primary" onClick={() => setModalOpen(true)}><Plus size={18} /> {t('rm_add_reminder')}</button>
       </div>
 
       {reminders && reminders.length > 0 ? (
@@ -106,29 +106,29 @@ export default function Reminders() {
                 {r.notes && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{r.notes}</div>}
               </div>
               <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(r)} style={{ minWidth: 80 }}>
-                {r.active ? <span className="badge badge-success">Active</span> : <span className="badge badge-neutral">Paused</span>}
+                {r.active ? <span className="badge badge-success">{t('rm_active')}</span> : <span className="badge badge-neutral">{t('rm_paused')}</span>}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => deleteReminder(r.id)} style={{ padding: 4 }}><Trash2 size={16} color="var(--error-500)" /></button>
             </div>
           ))}
         </div>
       ) : (
-        <EmptyState icon={BellRing} title="No reminders set" subtitle="Add reminders for medicines, checkups, and exercises to stay on track." />
+        <EmptyState icon={BellRing} title={t('rm_empty_title')} subtitle={t('rm_empty_subtitle')} />
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Reminder"
-        footer={<><button className="btn btn-ghost" onClick={() => setModalOpen(false)}>Cancel</button><button className="btn btn-primary" onClick={addReminder} disabled={!form.title}>Save Reminder</button></>}
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('rm_modal_title')}
+        footer={<><button className="btn btn-ghost" onClick={() => setModalOpen(false)}>{t('rm_cancel')}</button><button className="btn btn-primary" onClick={addReminder} disabled={!form.title}>{t('rm_save')}</button></>}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div><label className="label">Title *</label><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Take Metformin" /></div>
+          <div><label className="label">{t('rm_field_title')}</label><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('rm_field_title_placeholder')} /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label className="label">Type</label><select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="medicine">Medicine</option><option value="appointment">Appointment</option><option value="checkup">Checkup</option><option value="exercise">Exercise</option><option value="other">Other</option></select></div>
-            <div><label className="label">Time</label><input className="input" type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} /></div>
+            <div><label className="label">{t('rm_field_type')}</label><select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="medicine">{t('rm_opt_medicine')}</option><option value="appointment">{t('rm_opt_appointment')}</option><option value="checkup">{t('rm_opt_checkup')}</option><option value="exercise">{t('rm_opt_exercise')}</option><option value="other">{t('rm_opt_other')}</option></select></div>
+            <div><label className="label">{t('rm_field_time')}</label><input className="input" type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} /></div>
           </div>
-          <div><label className="label">Frequency</label><select className="input" value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value, days: [] })}><option value="daily">Daily</option><option value="weekly">Specific Days</option><option value="once">One Time</option></select></div>
+          <div><label className="label">{t('rm_field_frequency')}</label><select className="input" value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value, days: [] })}><option value="daily">{t('rm_opt_daily')}</option><option value="weekly">{t('rm_opt_weekly')}</option><option value="once">{t('rm_opt_once')}</option></select></div>
           {form.frequency === 'weekly' && (
             <div>
-              <label className="label">Days</label>
+              <label className="label">{t('rm_field_days')}</label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {days.map((d) => (
                   <button key={d} onClick={() => setForm({ ...form, days: form.days.includes(d) ? form.days.filter((x) => x !== d) : [...form.days, d] })}
@@ -139,7 +139,7 @@ export default function Reminders() {
               </div>
             </div>
           )}
-          <div><label className="label">Notes</label><input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional notes" /></div>
+          <div><label className="label">{t('vt_col_notes')}</label><input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={t('rm_field_notes_placeholder')} /></div>
         </div>
       </Modal>
     </div>

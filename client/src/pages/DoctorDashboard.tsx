@@ -10,12 +10,14 @@ import { LoadingState, EmptyState, Modal, DoctorAvatar } from '../lib/ui'
 import Settings from './Settings'
 import { useIncomingCallInvites, sendCallInvite, useNotificationPermission } from '../lib/callInvites'
 import { QuickSettings } from '../components/QuickSettings'
+import { useI18n } from '../lib/i18n'
 import type { Appointment, Consultation, Doctor, Article } from '../lib/types'
 
 const emptyArticleForm = { title: '', category: '', excerpt: '', content: '', read_time: '' }
 const emptyEndCallForm = { prescription: '', follow_up: false }
 
 export default function DoctorDashboard() {
+  const { t } = useI18n()
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
   const [tab, setTab] = useState<'overview' | 'library' | 'settings'>('overview')
@@ -82,7 +84,7 @@ export default function DoctorDashboard() {
 
   const addArticle = async () => {
     if (!articleForm.title.trim() || !articleForm.category.trim() || !articleForm.excerpt.trim() || !articleForm.content.trim()) {
-      setArticleError('Title, category, excerpt, and content are required')
+      setArticleError(t('dd_err_article_required'))
       return
     }
     setSavingArticle(true)
@@ -103,7 +105,7 @@ export default function DoctorDashboard() {
   }
 
   const deleteArticle = async (id: string, title: string) => {
-    if (!window.confirm(`Delete "${title}" from the Health Library? This cannot be undone.`)) return
+    if (!window.confirm(`${t('dd_delete_confirm')} "${title}" ${t('dd_delete_confirm_2')}`)) return
     await db.from('articles').delete().eq('id', id)
     reloadArticles()
   }
@@ -178,26 +180,26 @@ export default function DoctorDashboard() {
             </div>
           )}
           <div>
-            <div style={{ fontWeight: 700, color: 'var(--text-h)' }}>MediCare+ Doctor Portal</div>
+            <div style={{ fontWeight: 700, color: 'var(--text-h)' }}>{t('dd_portal_title')}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{profile?.full_name || profile?.email}</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <QuickSettings />
-          <button className="btn btn-ghost btn-sm" onClick={signOut}><LogOut size={16} /> Sign out</button>
+          <button className="btn btn-ghost btn-sm" onClick={signOut}><LogOut size={16} /> {t('dd_sign_out')}</button>
         </div>
       </header>
 
       <main style={{ padding: '28px 24px', maxWidth: 1000, margin: '0 auto' }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
           <button className={`btn btn-sm ${tab === 'overview' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('overview')}>
-            <Calendar size={15} /> Overview
+            <Calendar size={15} /> {t('dd_overview')}
           </button>
           <button className={`btn btn-sm ${tab === 'library' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('library')}>
-            <BookOpen size={15} /> Health Library
+            <BookOpen size={15} /> {t('dd_health_library')}
           </button>
           <button className={`btn btn-sm ${tab === 'settings' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('settings')}>
-            <SettingsIcon size={15} /> Settings
+            <SettingsIcon size={15} /> {t('dd_settings')}
           </button>
         </div>
 
@@ -207,14 +209,14 @@ export default function DoctorDashboard() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 560 }}>
-                Articles you publish here appear in every patient's Health Library.
+                {t('dd_library_intro')}
               </p>
               <button className="btn btn-primary btn-sm" onClick={() => { setArticleForm(emptyArticleForm); setArticleError(null); setArticleModalOpen(true) }}>
-                <Plus size={15} /> Add Article
+                <Plus size={15} /> {t('dd_add_article')}
               </button>
             </div>
             {articles.length === 0 ? (
-              <EmptyState icon={BookOpen} title="No articles yet" subtitle="Publish your first Health Library article for patients to read." />
+              <EmptyState icon={BookOpen} title={t('dd_no_articles')} subtitle={t('dd_no_articles_sub')} />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {articles.map((a) => (
@@ -239,19 +241,19 @@ export default function DoctorDashboard() {
               <PhoneIncoming size={18} color="white" />
             </div>
             <div style={{ flex: 1, minWidth: 180 }}>
-              <div style={{ fontWeight: 600, fontSize: 15 }}>{incoming.fromName} is calling you now</div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Join the consultation to connect.</div>
+              <div style={{ fontWeight: 600, fontSize: 15 }}>{incoming.fromName} {t('dd_calling_you')}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('dd_join_to_connect')}</div>
             </div>
             <button className="btn btn-primary btn-sm" onClick={() => {
               const c = consultations.find((x) => x.id === incoming.consultationId)
               if (c) joinNow(c)
-            }}>Join Now</button>
-            <button className="btn btn-ghost btn-sm" onClick={dismiss}>Dismiss</button>
+            }}>{t('dd_join_now')}</button>
+            <button className="btn btn-ghost btn-sm" onClick={dismiss}>{t('dd_dismiss')}</button>
           </div>
         )}
         {permission !== 'granted' && (
           <button className="btn btn-secondary btn-sm" style={{ marginBottom: 20 }} onClick={request}>
-            Enable call notifications
+            {t('dd_enable_notifications')}
           </button>
         )}
         {loading ? <LoadingState /> : (
@@ -260,9 +262,8 @@ export default function DoctorDashboard() {
               <div className="card" style={{ padding: 18, marginBottom: 20, background: 'var(--warning-50)', border: '1px solid var(--warning-100)' }}>
                 <p style={{ fontSize: 14, color: 'var(--warning-600)' }}>
                   <Stethoscope size={15} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} />
-                  Your account isn't linked to a doctor listing yet, so patient-booked appointments won't show here.
-                  Ask reception to link your account (Receptionist Portal → Link Doctors) using your email: <strong>{profile?.email}</strong>.
-                  Telemedicine consultations booked under your name will still appear below.
+                  {t('dd_not_linked_warning')} <strong>{profile?.email}</strong>.
+                  {' '}{t('dd_not_linked_note')}
                 </p>
               </div>
             )}
@@ -270,22 +271,22 @@ export default function DoctorDashboard() {
             {/* Analytics overview */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }} className="dash-links-row">
               <div className="card" style={{ padding: 16 }}>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Total Appointments</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{t('dd_total_appointments')}</div>
                 <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-h)' }}>{appointments.length}</div>
               </div>
               <div className="card" style={{ padding: 16 }}>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Upcoming</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{t('dd_upcoming')}</div>
                 <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--primary-600)' }}>{upcomingCount}</div>
               </div>
               <div className="card" style={{ padding: 16 }}>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Completed</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{t('dd_completed')}</div>
                 <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--success-600)' }}>{completedCount}</div>
               </div>
             </div>
 
             <div className="card" style={{ padding: 20, marginBottom: 28 }}>
               <h4 style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <TrendingUp size={17} color="var(--primary-500)" /> Appointments — Last 7 Days
+                <TrendingUp size={17} color="var(--primary-500)" /> {t('dd_chart_title')}
               </h4>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={weeklyData}>
@@ -298,9 +299,9 @@ export default function DoctorDashboard() {
               </ResponsiveContainer>
             </div>
 
-            <h3 style={{ marginBottom: 14 }}><Calendar size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: -3 }} color="var(--primary-500)" />Appointments</h3>
+            <h3 style={{ marginBottom: 14 }}><Calendar size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: -3 }} color="var(--primary-500)" />{t('dd_appointments_heading')}</h3>
             {appointments.length === 0 ? (
-              <EmptyState icon={Calendar} title="No appointments" subtitle="Booked appointments linked to your doctor profile will appear here." />
+              <EmptyState icon={Calendar} title={t('dd_no_appointments')} subtitle={t('dd_no_appointments_sub')} />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
                 {appointments.map((a) => (
@@ -308,26 +309,26 @@ export default function DoctorDashboard() {
                     <div style={{ flex: 1, minWidth: 150 }}>
                       <div style={{ fontWeight: 600 }}>{a.patient_name}</div>
                       <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', gap: 10, marginTop: 2 }}>
-                        <span><Clock size={12} style={{ display: 'inline', marginRight: 3 }} />{a.date} at {a.time_slot}</span>
+                        <span><Clock size={12} style={{ display: 'inline', marginRight: 3 }} />{a.date} {t('dd_at')} {a.time_slot}</span>
                         <span style={{ textTransform: 'capitalize' }}>{a.type}</span>
                       </div>
                       {a.reason && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{a.reason}</div>}
                     </div>
                     <span className={`badge ${a.status === 'upcoming' ? 'badge-info' : a.status === 'confirmed' ? 'badge-success' : a.status === 'completed' ? 'badge-neutral' : 'badge-neutral'}`} style={{ textTransform: 'capitalize' }}>{a.status}</span>
                     {a.status === 'upcoming' && (
-                      <button className="btn btn-primary btn-sm" onClick={() => updateApptStatus(a.id, 'confirmed')}>Confirm</button>
+                      <button className="btn btn-primary btn-sm" onClick={() => updateApptStatus(a.id, 'confirmed')}>{t('dd_confirm')}</button>
                     )}
                     {a.status === 'confirmed' && (
-                      <button className="btn btn-secondary btn-sm" onClick={() => updateApptStatus(a.id, 'completed')}>Mark Done</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => updateApptStatus(a.id, 'completed')}>{t('dd_mark_done')}</button>
                     )}
                   </div>
                 ))}
               </div>
             )}
 
-            <h3 style={{ marginBottom: 14 }}><VideoIcon size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: -3 }} color="var(--accent-500)" />Telemedicine Consultations</h3>
+            <h3 style={{ marginBottom: 14 }}><VideoIcon size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: -3 }} color="var(--accent-500)" />{t('dd_telemedicine_heading')}</h3>
             {consultations.length === 0 ? (
-              <EmptyState icon={VideoIcon} title="No consultations" subtitle="Consultations patients book under your name will appear here." />
+              <EmptyState icon={VideoIcon} title={t('dd_no_consultations')} subtitle={t('dd_no_consultations_sub')} />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {consultations.map((c) => (
@@ -335,13 +336,13 @@ export default function DoctorDashboard() {
                     <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--accent-50)', display: 'grid', placeItems: 'center' }}>{modeIcon(c.mode)}</div>
                     <div style={{ flex: 1, minWidth: 150 }}>
                       <div style={{ fontWeight: 600 }}>{c.patient_name}</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{c.date} at {c.time_slot}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{c.date} {t('dd_at')} {c.time_slot}</div>
                     </div>
                     <span className="badge badge-info" style={{ textTransform: 'capitalize' }}>{c.mode}</span>
                     {c.status === 'scheduled' && (
                       <>
-                        <button className="btn btn-primary btn-sm" onClick={() => joinNow(c)}>Join Now</button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => { setEndCallTarget(c); setEndCallForm(emptyEndCallForm) }}>End & Add Advice</button>
+                        <button className="btn btn-primary btn-sm" onClick={() => joinNow(c)}>{t('dd_join_now')}</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => { setEndCallTarget(c); setEndCallForm(emptyEndCallForm) }}>{t('dd_end_add_advice')}</button>
                       </>
                     )}
                   </div>
@@ -363,8 +364,8 @@ export default function DoctorDashboard() {
         />
       )}
       {activeCall && activeCall.mode === 'chat' && (
-        <Modal open={true} onClose={() => setActiveCall(null)} title={`Chat with ${activeCall.patient_name}`}
-          footer={<button className="btn btn-ghost" onClick={() => setActiveCall(null)}>Close</button>}
+        <Modal open={true} onClose={() => setActiveCall(null)} title={`${t('dd_chat_with')} ${activeCall.patient_name}`}
+          footer={<button className="btn btn-ghost" onClick={() => setActiveCall(null)}>{t('dd_close')}</button>}
         >
           <ChatOnly roomId={activeCall.id} displayName={myName} />
         </Modal>
@@ -373,25 +374,25 @@ export default function DoctorDashboard() {
       <Modal
         open={!!endCallTarget}
         onClose={() => setEndCallTarget(null)}
-        title={`End consultation with ${endCallTarget?.patient_name ?? ''}`}
+        title={`${t('dd_end_consultation_with')} ${endCallTarget?.patient_name ?? ''}`}
         footer={
           <>
-            <button className="btn btn-ghost" onClick={() => setEndCallTarget(null)}>Cancel</button>
-            <button className="btn btn-primary" onClick={submitEndCall} disabled={endingCall}>{endingCall ? 'Saving...' : 'Mark Completed'}</button>
+            <button className="btn btn-ghost" onClick={() => setEndCallTarget(null)}>{t('dd_cancel')}</button>
+            <button className="btn btn-primary" onClick={submitEndCall} disabled={endingCall}>{endingCall ? t('dd_saving') : t('dd_mark_completed')}</button>
           </>
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            Once marked completed, this consultation moves to Past Consultations and can no longer be re-joined by either side.
+            {t('dd_end_call_note')}
           </p>
           <div>
-            <label className="label">Prescription / Advice</label>
-            <textarea className="input" rows={4} value={endCallForm.prescription} onChange={(e) => setEndCallForm({ ...endCallForm, prescription: e.target.value })} placeholder="Medicines, dosage, and advice for the patient" />
+            <label className="label">{t('dd_prescription_advice')}</label>
+            <textarea className="input" rows={4} value={endCallForm.prescription} onChange={(e) => setEndCallForm({ ...endCallForm, prescription: e.target.value })} placeholder={t('dd_prescription_placeholder')} />
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer' }}>
             <input type="checkbox" checked={endCallForm.follow_up} onChange={(e) => setEndCallForm({ ...endCallForm, follow_up: e.target.checked })} />
-            Recommend a follow-up visit
+            {t('dd_recommend_followup')}
           </label>
         </div>
       </Modal>
@@ -399,22 +400,22 @@ export default function DoctorDashboard() {
       <Modal
         open={articleModalOpen}
         onClose={() => setArticleModalOpen(false)}
-        title="Add Health Library Article"
+        title={t('dd_add_library_article')}
         footer={
           <>
-            <button className="btn btn-ghost" onClick={() => setArticleModalOpen(false)}>Cancel</button>
-            <button className="btn btn-primary" onClick={addArticle} disabled={savingArticle}>{savingArticle ? 'Publishing...' : 'Publish'}</button>
+            <button className="btn btn-ghost" onClick={() => setArticleModalOpen(false)}>{t('dd_cancel')}</button>
+            <button className="btn btn-primary" onClick={addArticle} disabled={savingArticle}>{savingArticle ? t('dd_publishing') : t('dd_publish')}</button>
           </>
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div><label className="label">Title *</label><input className="input" value={articleForm.title} onChange={(e) => setArticleForm({ ...articleForm, title: e.target.value })} /></div>
+          <div><label className="label">{t('dd_title_req')}</label><input className="input" value={articleForm.title} onChange={(e) => setArticleForm({ ...articleForm, title: e.target.value })} /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label className="label">Category *</label><input className="input" value={articleForm.category} onChange={(e) => setArticleForm({ ...articleForm, category: e.target.value })} placeholder="e.g. Nutrition" /></div>
-            <div><label className="label">Read time</label><input className="input" value={articleForm.read_time} onChange={(e) => setArticleForm({ ...articleForm, read_time: e.target.value })} placeholder="e.g. 4 min" /></div>
+            <div><label className="label">{t('dd_category_req')}</label><input className="input" value={articleForm.category} onChange={(e) => setArticleForm({ ...articleForm, category: e.target.value })} placeholder={t('dd_category_placeholder')} /></div>
+            <div><label className="label">{t('dd_read_time')}</label><input className="input" value={articleForm.read_time} onChange={(e) => setArticleForm({ ...articleForm, read_time: e.target.value })} placeholder={t('dd_read_time_placeholder')} /></div>
           </div>
-          <div><label className="label">Excerpt *</label><textarea className="input" rows={2} value={articleForm.excerpt} onChange={(e) => setArticleForm({ ...articleForm, excerpt: e.target.value })} /></div>
-          <div><label className="label">Content *</label><textarea className="input" rows={6} value={articleForm.content} onChange={(e) => setArticleForm({ ...articleForm, content: e.target.value })} /></div>
+          <div><label className="label">{t('dd_excerpt_req')}</label><textarea className="input" rows={2} value={articleForm.excerpt} onChange={(e) => setArticleForm({ ...articleForm, excerpt: e.target.value })} /></div>
+          <div><label className="label">{t('dd_content_req')}</label><textarea className="input" rows={6} value={articleForm.content} onChange={(e) => setArticleForm({ ...articleForm, content: e.target.value })} /></div>
           {articleError && <p style={{ color: 'var(--error-600)', fontSize: 13 }}>{articleError}</p>}
         </div>
       </Modal>

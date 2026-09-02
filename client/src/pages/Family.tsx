@@ -38,7 +38,7 @@ export default function Family() {
       <PageHeader title={t('ph_family_title')} subtitle={t('ph_family_subtitle')} icon={Users} />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
-        <button className="btn btn-primary" onClick={() => { setModalOpen(true); setSuccess(false) }}><Plus size={18} /> Add Member</button>
+        <button className="btn btn-primary" onClick={() => { setModalOpen(true); setSuccess(false) }}><Plus size={18} /> {t('fm_add_member')}</button>
       </div>
 
       {members && members.length > 0 ? (
@@ -58,48 +58,48 @@ export default function Family() {
                 <button className="btn btn-ghost btn-sm" onClick={() => deleteMember(m.id)} style={{ padding: 4 }}><Trash2 size={16} color="var(--error-500)" /></button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: 'var(--text)' }}>
-                {m.age && <span>Age: {m.age}</span>}
-                {m.gender && <span style={{ textTransform: 'capitalize' }}>Gender: {m.gender}</span>}
-                {m.blood_group && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Heart size={13} color="var(--error-500)" /> Blood Group: {m.blood_group}</span>}
+                {m.age && <span>{t('fm_age')} {m.age}</span>}
+                {m.gender && <span style={{ textTransform: 'capitalize' }}>{t('fm_gender')} {m.gender}</span>}
+                {m.blood_group && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Heart size={13} color="var(--error-500)" /> {t('fm_blood_group')} {m.blood_group}</span>}
                 {m.phone && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Phone size={13} color="var(--text-muted)" /> {m.phone}</span>}
               </div>
               {m.conditions.length > 0 && (
-                <div><div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Conditions</div><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{m.conditions.map((c) => <span key={c} className="badge badge-warning">{c}</span>)}</div></div>
+                <div><div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>{t('fm_conditions')}</div><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{m.conditions.map((c) => <span key={c} className="badge badge-warning">{c}</span>)}</div></div>
               )}
               {m.allergies.length > 0 && (
-                <div><div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Allergies</div><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{m.allergies.map((a) => <span key={a} className="badge badge-error">{a}</span>)}</div></div>
+                <div><div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>{t('fm_allergies')}</div><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{m.allergies.map((a) => <span key={a} className="badge badge-error">{a}</span>)}</div></div>
               )}
             </div>
           ))}
         </div>
       ) : (
-        <EmptyState icon={Users} title="No family members" subtitle="Add family members to track their health profiles, conditions, and allergies." />
+        <EmptyState icon={Users} title={t('fm_empty_title')} subtitle={t('fm_empty_subtitle')} />
       )}
 
       <Modal open={modalOpen} onClose={() => { setModalOpen(false); setSuccess(false) }}
-        title={success ? 'Member Added!' : 'Add Family Member'}
-        footer={success ? <button className="btn btn-primary" onClick={() => { setModalOpen(false); setSuccess(false) }}>Done</button>
-          : <><button className="btn btn-ghost" onClick={() => setModalOpen(false)}>Cancel</button><button className="btn btn-primary" onClick={addMember} disabled={!form.name || !form.relation}>Save</button></>}
+        title={success ? t('fm_modal_added') : t('fm_modal_add_title')}
+        footer={success ? <button className="btn btn-primary" onClick={() => { setModalOpen(false); setSuccess(false) }}>{t('fm_done')}</button>
+          : <><button className="btn btn-ghost" onClick={() => setModalOpen(false)}>{t('fm_cancel')}</button><button className="btn btn-primary" onClick={addMember} disabled={!form.name || !form.relation}>{t('fm_save')}</button></>}
       >
         {success ? (
           <div style={{ textAlign: 'center', padding: 16 }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--success-50)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}><CheckCircle size={28} color="var(--success-500)" /></div>
-            <p>Family member has been added.</p>
+            <p>{t('fm_added_success')}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div><label className="label">Name *</label><input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Full name" /></div>
+            <div><label className="label">{t('fm_field_name')}</label><input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t('fm_field_name_placeholder')} /></div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="form-grid-2">
-              <div><label className="label">Relation *</label><input className="input" value={form.relation} onChange={(e) => setForm({ ...form, relation: e.target.value })} placeholder="e.g. Spouse, Son" /></div>
-              <div><label className="label">Age</label><input className="input" type="number" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} placeholder="Age" /></div>
+              <div><label className="label">{t('fm_field_relation')}</label><input className="input" value={form.relation} onChange={(e) => setForm({ ...form, relation: e.target.value })} placeholder={t('fm_field_relation_placeholder')} /></div>
+              <div><label className="label">{t('cl_age')}</label><input className="input" type="number" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} placeholder={t('fm_field_age_placeholder')} /></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="form-grid-2">
-              <div><label className="label">Gender</label><select className="input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div>
-              <div><label className="label">Blood Group</label><input className="input" value={form.blood_group} onChange={(e) => setForm({ ...form, blood_group: e.target.value })} placeholder="e.g. O+" /></div>
+              <div><label className="label">{t('cl_gender')}</label><select className="input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}><option value="male">{t('fm_opt_male')}</option><option value="female">{t('fm_opt_female')}</option><option value="other">{t('fm_opt_other')}</option></select></div>
+              <div><label className="label">{t('fm_blood_group').replace(':', '')}</label><input className="input" value={form.blood_group} onChange={(e) => setForm({ ...form, blood_group: e.target.value })} placeholder="e.g. O+" /></div>
             </div>
-            <div><label className="label">Phone</label><input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone number" /></div>
-            <div><label className="label">Conditions (comma-separated)</label><input className="input" value={form.conditions} onChange={(e) => setForm({ ...form, conditions: e.target.value })} placeholder="e.g. Diabetes, Hypertension" /></div>
-            <div><label className="label">Allergies (comma-separated)</label><input className="input" value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })} placeholder="e.g. Penicillin, Peanuts" /></div>
+            <div><label className="label">{t('fm_field_phone')}</label><input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={t('fm_field_phone_placeholder')} /></div>
+            <div><label className="label">{t('fm_field_conditions')}</label><input className="input" value={form.conditions} onChange={(e) => setForm({ ...form, conditions: e.target.value })} placeholder={t('fm_field_conditions_placeholder')} /></div>
+            <div><label className="label">{t('fm_field_allergies')}</label><input className="input" value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })} placeholder={t('fm_field_allergies_placeholder')} /></div>
           </div>
         )}
       </Modal>

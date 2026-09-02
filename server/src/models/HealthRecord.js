@@ -13,6 +13,7 @@ const healthRecordSchema = new mongoose.Schema({
   hospital: { type: String, default: null },
   notes: { type: String, default: null },
   file_url: { type: String, default: null },
+  ipfs_cid: { type: String, default: null }, // IPFS CID if the file has been pushed on-chain-verifiably to IPFS
   created_at: { type: Date, default: Date.now },
 
   // --- Blockchain anchoring (Ethereum Sepolia testnet) ---

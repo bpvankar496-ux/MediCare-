@@ -54,17 +54,17 @@ export default function Doctors() {
       <div className="card" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px' }}>
           <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input className="input" style={{ paddingLeft: 40 }} placeholder="Search by doctor name or specialty..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input" style={{ paddingLeft: 40 }} placeholder={t('dc_search_placeholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <select className="input" style={{ width: 'auto', flex: '0 0 auto' }} value={specialtyFilter} onChange={(e) => setSpecialtyFilter(e.target.value)}>
-          {specialties.map((s) => <option key={s} value={s}>{s === 'all' ? 'All Specialties' : s}</option>)}
+          {specialties.map((s) => <option key={s} value={s}>{s === 'all' ? t('dc_all_specialties') : s}</option>)}
         </select>
         <select className="input" style={{ width: 'auto', flex: '0 0 auto' }} value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}>
-          {cities.map((c) => <option key={c} value={c}>{c === 'all' ? 'All Cities' : c}</option>)}
+          {cities.map((c) => <option key={c} value={c}>{c === 'all' ? t('dc_all_cities') : c}</option>)}
         </select>
       </div>
 
-      <p style={{ marginBottom: 14, color: 'var(--text-muted)', fontSize: 14 }}>{filtered.length} doctor{filtered.length !== 1 ? 's' : ''} found</p>
+      <p style={{ marginBottom: 14, color: 'var(--text-muted)', fontSize: 14 }}>{filtered.length} {filtered.length !== 1 ? t('dc_doctor_plural') : t('dc_doctor_singular')} {t('dc_found')}</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
         {filtered.map((doc) => (
@@ -75,28 +75,28 @@ export default function Doctors() {
                 <h4 style={{ marginBottom: 2 }}>{doc.name}</h4>
                 <p style={{ fontSize: 14, color: 'var(--primary-500)', fontWeight: 600, marginBottom: 4 }}>{doc.specialty}</p>
                 <StarRating rating={doc.rating} />
-                <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 6 }}>({doc.reviews_count} reviews)</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 6 }}>({doc.reviews_count} {t('dc_reviews_count')})</span>
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: 'var(--text)' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Award size={15} color="var(--text-muted)" /> {doc.qualification}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Clock size={15} color="var(--text-muted)" /> {doc.experience_years} years experience</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Clock size={15} color="var(--text-muted)" /> {doc.experience_years} {t('dc_years_experience')}</span>
               {doc.hospital && <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><MapPin size={15} color="var(--text-muted)" /> {doc.hospital}, {doc.city}</span>}
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><DollarSign size={15} color="var(--text-muted)" /> Consultation fee: ₹{doc.fee}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><DollarSign size={15} color="var(--text-muted)" /> {t('dc_consultation_fee')} ₹{doc.fee}</span>
             </div>
 
             {upcomingByDoctor(doc.id).length > 0 && (
               <div style={{ padding: '8px 12px', background: 'var(--primary-50)', borderRadius: 'var(--radius-sm)', fontSize: 13, color: 'var(--primary-700)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Calendar size={14} /> {upcomingByDoctor(doc.id).length} upcoming appointment{upcomingByDoctor(doc.id).length > 1 ? 's' : ''}
+                <Calendar size={14} /> {upcomingByDoctor(doc.id).length} {upcomingByDoctor(doc.id).length > 1 ? t('dc_upcoming_appts') : t('dc_upcoming_appt')}
               </div>
             )}
 
             <button className="btn btn-primary" onClick={() => { setSelectedDoctor(doc); setBookingSuccess(false) }} style={{ marginTop: 'auto' }}>
-              <Calendar size={16} /> Book Appointment
+              <Calendar size={16} /> {t('dc_book_appointment')}
             </button>
             <button className="btn btn-secondary btn-sm" onClick={() => setReviewsDoctor(doc)}>
-              <Star size={14} /> {reviewsByDoctor(doc.id).length > 0 ? `${reviewsByDoctor(doc.id).length} Patient Review${reviewsByDoctor(doc.id).length > 1 ? 's' : ''}` : 'Write a Review'}
+              <Star size={14} /> {reviewsByDoctor(doc.id).length > 0 ? `${reviewsByDoctor(doc.id).length} ${reviewsByDoctor(doc.id).length > 1 ? t('dc_patient_reviews') : t('dc_patient_review')}` : t('dc_write_review')}
             </button>
           </div>
         ))}
@@ -104,7 +104,7 @@ export default function Doctors() {
 
       {filtered.length === 0 && (
         <div className="card" style={{ padding: 48, textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-muted)' }}>No doctors match your search. Try different filters.</p>
+          <p style={{ color: 'var(--text-muted)' }}>{t('dc_no_match')}</p>
         </div>
       )}
 
@@ -113,7 +113,7 @@ export default function Doctors() {
         doctor={selectedDoctor}
         appointments={appointments ?? []}
         onClose={() => setSelectedDoctor(null)}
-        onSuccess={() => { setBookingSuccess(true); refetchAppts(); showToast('Appointment booked successfully!', 'success') }}
+        onSuccess={() => { setBookingSuccess(true); refetchAppts(); showToast(t('dc_appt_booked_toast'), 'success') }}
         success={bookingSuccess}
       />
 
@@ -122,7 +122,7 @@ export default function Doctors() {
         doctor={reviewsDoctor}
         reviews={reviewsDoctor ? reviewsByDoctor(reviewsDoctor.id) : []}
         onClose={() => setReviewsDoctor(null)}
-        onSubmitted={() => { refetchReviews(); showToast('Thanks — your review was posted!', 'success') }}
+        onSubmitted={() => { refetchReviews(); showToast(t('dc_review_posted_toast'), 'success') }}
       />
     </div>
   )
@@ -134,6 +134,7 @@ function ReviewsModal({ doctor, reviews, onClose, onSubmitted }: {
   onClose: () => void
   onSubmitted: () => void
 }) {
+  const { t } = useI18n()
   const { profile } = useAuth()
   const { showToast } = useToast()
   const [rating, setRating] = useState(5)
@@ -146,7 +147,7 @@ function ReviewsModal({ doctor, reviews, onClose, onSubmitted }: {
   if (!doctor) return null
 
   const submitReview = async () => {
-    if (!patientName.trim()) { showToast('Please enter your name', 'error'); return }
+    if (!patientName.trim()) { showToast(t('dc_err_enter_name'), 'error'); return }
     setSubmitting(true)
     const { error } = await db.from('reviews').insert({
       doctor_id: doctor.id,
@@ -164,22 +165,22 @@ function ReviewsModal({ doctor, reviews, onClose, onSubmitted }: {
     <Modal
       open={!!doctor}
       onClose={onClose}
-      title={`Reviews — ${doctor.name}`}
-      footer={<button className="btn btn-ghost" onClick={onClose}>Close</button>}
+      title={`${t('dc_reviews_dash')} ${doctor.name}`}
+      footer={<button className="btn btn-ghost" onClick={onClose}>{t('dc_close')}</button>}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {!showForm ? (
           <button className="btn btn-secondary" onClick={() => setShowForm(true)}>
-            <MessageSquarePlus size={16} /> Write a Review
+            <MessageSquarePlus size={16} /> {t('dc_write_review')}
           </button>
         ) : (
           <div className="card" style={{ padding: 16, background: 'var(--neutral-50)', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 600, fontSize: 14 }}>Your Review</span>
+              <span style={{ fontWeight: 600, fontSize: 14 }}>{t('dc_your_review')}</span>
               <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)' }}><X size={16} /></button>
             </div>
             <div>
-              <label className="label">Your Rating</label>
+              <label className="label">{t('dc_your_rating')}</label>
               <div style={{ display: 'flex', gap: 4 }}>
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
@@ -196,19 +197,19 @@ function ReviewsModal({ doctor, reviews, onClose, onSubmitted }: {
               </div>
             </div>
             <div>
-              <label className="label">Your Name</label>
-              <input className="input" value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Your name" />
+              <label className="label">{t('dc_your_name')}</label>
+              <input className="input" value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder={t('dc_your_name_placeholder')} />
             </div>
             <div>
-              <label className="label">Comment (optional)</label>
-              <textarea className="input" rows={3} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="How was your experience?" />
+              <label className="label">{t('dc_comment_optional')}</label>
+              <textarea className="input" rows={3} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t('dc_comment_placeholder')} />
             </div>
-            <button className="btn btn-primary" onClick={submitReview} disabled={submitting}>{submitting ? 'Posting...' : 'Post Review'}</button>
+            <button className="btn btn-primary" onClick={submitReview} disabled={submitting}>{submitting ? t('dc_posting') : t('dc_post_review')}</button>
           </div>
         )}
 
         {reviews.length === 0 ? (
-          <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', padding: '12px 0' }}>No reviews yet — be the first to share your experience.</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', padding: '12px 0' }}>{t('dc_no_reviews')}</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 320, overflowY: 'auto' }}>
             {reviews.map((r) => (
@@ -239,6 +240,7 @@ function BookingModal({ doctor, appointments, onClose, onSuccess, success }: {
   onSuccess: () => void
   success: boolean
 }) {
+  const { t } = useI18n()
   const [form, setForm] = useState({ patient_name: '', patient_age: '', patient_gender: 'male', date: '', time_slot: '', type: 'in-person', reason: '' })
   const [submitting, setSubmitting] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -247,9 +249,6 @@ function BookingModal({ doctor, appointments, onClose, onSuccess, success }: {
 
   const today = new Date().toISOString().split('T')[0]
 
-  // New feature: real availability - a time slot already booked (status
-  // "upcoming") for this doctor on the chosen date is hidden from the
-  // dropdown instead of silently allowing a double-booking.
   const allSlots = Array.from(new Set([...doctor.availability, '10:00-10:30', '11:00-11:30', '16:00-16:30']))
   const bookedSlotsForDate = new Set(
     appointments
@@ -259,7 +258,7 @@ function BookingModal({ doctor, appointments, onClose, onSuccess, success }: {
   const availableSlots = form.date ? allSlots.filter((s) => !bookedSlotsForDate.has(s)) : allSlots
 
   const handleSubmit = async () => {
-    if (!form.patient_name || !form.date || !form.time_slot) { setErr('Please fill in patient name, date, and time slot'); return }
+    if (!form.patient_name || !form.date || !form.time_slot) { setErr(t('dc_err_required')); return }
     setSubmitting(true); setErr(null)
     const { error } = await db.from('appointments').insert({
       doctor_id: doctor.id,
@@ -281,12 +280,12 @@ function BookingModal({ doctor, appointments, onClose, onSuccess, success }: {
     <Modal
       open={!!doctor}
       onClose={onClose}
-      title={success ? 'Appointment Booked!' : `Book with ${doctor.name}`}
+      title={success ? t('dc_appt_booked_title') : `${t('dc_book_with')} ${doctor.name}`}
       footer={success
-        ? <button className="btn btn-primary" onClick={onClose}>Done</button>
+        ? <button className="btn btn-primary" onClick={onClose}>{t('dc_done')}</button>
         : <>
-            <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>{submitting ? 'Booking...' : 'Confirm Booking'}</button>
+            <button className="btn btn-ghost" onClick={onClose}>{t('dc_cancel')}</button>
+            <button className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>{submitting ? t('dc_booking') : t('dc_confirm_booking')}</button>
           </>
       }
     >
@@ -295,48 +294,48 @@ function BookingModal({ doctor, appointments, onClose, onSuccess, success }: {
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--success-50)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
             <CheckCircle size={28} color="var(--success-500)" />
           </div>
-          <p style={{ marginBottom: 8 }}>Your appointment with <strong>{doctor.name}</strong> on <strong>{form.date}</strong> at <strong>{form.time_slot}</strong> has been booked.</p>
+          <p style={{ marginBottom: 8 }}>{t('dc_appt_success')} <strong>{doctor.name}</strong> {t('dc_appt_success_2')} <strong>{form.date}</strong> {t('dc_appt_success_3')} <strong>{form.time_slot}</strong> {t('dc_appt_success_4')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ padding: 12, background: 'var(--neutral-50)', borderRadius: 'var(--radius-sm)', fontSize: 13 }}>
-            <strong>{doctor.specialty}</strong> - Fee: ₹{doctor.fee}
+            <strong>{doctor.specialty}</strong> - {t('dc_fee_label')} ₹{doctor.fee}
           </div>
           <div>
-            <label className="label">Patient Name *</label>
-            <input className="input" value={form.patient_name} onChange={(e) => setForm({ ...form, patient_name: e.target.value })} placeholder="Enter patient name" />
+            <label className="label">{t('dc_patient_name')}</label>
+            <input className="input" value={form.patient_name} onChange={(e) => setForm({ ...form, patient_name: e.target.value })} placeholder={t('dc_patient_name_placeholder')} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label className="label">Age</label>
-              <input className="input" type="number" value={form.patient_age} onChange={(e) => setForm({ ...form, patient_age: e.target.value })} placeholder="Age" />
+              <label className="label">{t('dc_age')}</label>
+              <input className="input" type="number" value={form.patient_age} onChange={(e) => setForm({ ...form, patient_age: e.target.value })} placeholder={t('dc_age')} />
             </div>
             <div>
-              <label className="label">Gender</label>
+              <label className="label">{t('dc_gender')}</label>
               <select className="input" value={form.patient_gender} onChange={(e) => setForm({ ...form, patient_gender: e.target.value })}>
-                <option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+                <option value="male">{t('dc_male')}</option><option value="female">{t('dc_female')}</option><option value="other">{t('dc_other')}</option>
               </select>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label className="label">Date *</label>
+              <label className="label">{t('dc_date')}</label>
               <input className="input" type="date" min={today} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value, time_slot: '' })} />
             </div>
             <div>
-              <label className="label">Time Slot *</label>
+              <label className="label">{t('dc_time_slot')}</label>
               <select className="input" value={form.time_slot} onChange={(e) => setForm({ ...form, time_slot: e.target.value })} disabled={!form.date}>
-                <option value="">{form.date ? 'Select slot' : 'Pick a date first'}</option>
+                <option value="">{form.date ? t('dc_select_slot') : t('dc_pick_date_first')}</option>
                 {availableSlots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
               </select>
               {form.date && availableSlots.length === 0 && (
-                <p style={{ fontSize: 12, color: 'var(--error-600)', marginTop: 4 }}>No slots left for this date — try another day.</p>
+                <p style={{ fontSize: 12, color: 'var(--error-600)', marginTop: 4 }}>{t('dc_no_slots')}</p>
               )}
             </div>
           </div>
           <div>
-            <label className="label">Reason for Visit</label>
-            <textarea className="input" rows={2} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="Brief description of symptoms or reason" />
+            <label className="label">{t('dc_reason')}</label>
+            <textarea className="input" rows={2} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder={t('dc_reason_placeholder')} />
           </div>
           {err && <p style={{ color: 'var(--error-600)', fontSize: 13 }}>{err}</p>}
         </div>

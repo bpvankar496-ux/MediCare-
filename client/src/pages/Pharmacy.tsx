@@ -67,7 +67,7 @@ export default function Pharmacy() {
       if (existing) return prev.map((i) => i.id === med.id ? { ...i, quantity: i.quantity + 1 } : i)
       return [...prev, { id: med.id, name: med.name, brand: med.brand, price: med.price, quantity: 1 }]
     })
-    showToast(`${med.name} added to cart`, 'info')
+    showToast(`${med.name} ${t('ph2_added_to_cart')}`, 'info')
   }
   const updateQty = (id: string, delta: number) => {
     setCart((prev) => prev.map((i) => i.id === id ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i).filter((i) => i.quantity > 0))
@@ -95,7 +95,7 @@ export default function Pharmacy() {
     setCart([]); setCheckoutOpen(false); setCartOpen(false)
     setOrderSuccess(orderNum); setAddress(''); setPaymentMethod('cod'); setPaymentValid(true)
     refetchOrders()
-    showToast(`Order ${orderNum} placed successfully!`, 'success')
+    showToast(`Order ${orderNum} ${t('ph2_order_toast')}`, 'success')
   }
 
   if (loading) return <div><PageHeader title={t('ph_pharmacy_title')} subtitle={t('ph_pharmacy_subtitle')} icon={Pill} /><LoadingState /></div>
@@ -108,13 +108,13 @@ export default function Pharmacy() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px' }}>
           <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input className="input" style={{ paddingLeft: 40 }} placeholder="Search medicines..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input" style={{ paddingLeft: 40 }} placeholder={t('ph2_search_placeholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <select className="input" style={{ width: 'auto' }} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-          {categories.map((c) => <option key={c} value={c}>{c === 'all' ? 'All Categories' : c}</option>)}
+          {categories.map((c) => <option key={c} value={c}>{c === 'all' ? t('ph2_all_categories') : c}</option>)}
         </select>
         <button className="btn btn-primary" onClick={() => setCartOpen(true)} style={{ position: 'relative' }}>
-          <ShoppingCart size={18} /> Cart
+          <ShoppingCart size={18} /> {t('ph2_cart')}
           {cartCount > 0 && <span style={{ position: 'absolute', top: -6, right: -6, background: 'var(--error-500)', color: 'white', fontSize: 11, fontWeight: 700, borderRadius: '50%', width: 20, height: 20, display: 'grid', placeItems: 'center' }}>{cartCount}</span>}
         </button>
       </div>
@@ -136,12 +136,12 @@ export default function Pharmacy() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-h)' }}>₹{med.price}</span>
                 <span style={{ fontSize: 13, color: 'var(--text-muted)', textDecoration: 'line-through' }}>₹{med.mrp}</span>
-                <span className="badge badge-success" style={{ marginLeft: 'auto' }}>{Math.round((1 - med.price / med.mrp) * 100)}% off</span>
+                <span className="badge badge-success" style={{ marginLeft: 'auto' }}>{Math.round((1 - med.price / med.mrp) * 100)}% {t('ph2_off')}</span>
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <span className="badge badge-neutral">{med.category}</span>
-                {med.prescription_required && <span className="badge badge-warning">Rx Required</span>}
-                {med.in_stock ? <span className="badge badge-success">In Stock</span> : <span className="badge badge-error">Out of Stock</span>}
+                {med.prescription_required && <span className="badge badge-warning">{t('ph2_rx_required')}</span>}
+                {med.in_stock ? <span className="badge badge-success">{t('ph2_in_stock')}</span> : <span className="badge badge-error">{t('ph2_out_of_stock')}</span>}
               </div>
               {inCart ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--primary-50)', borderRadius: 'var(--radius-sm)', padding: '4px 8px' }}>
@@ -151,7 +151,7 @@ export default function Pharmacy() {
                 </div>
               ) : (
                 <button className="btn btn-secondary btn-sm" onClick={() => addToCart(med)} disabled={!med.in_stock}>
-                  <Plus size={16} /> Add to Cart
+                  <Plus size={16} /> {t('ph2_add_to_cart')}
                 </button>
               )}
             </div>
@@ -162,7 +162,7 @@ export default function Pharmacy() {
       {/* Recent Orders */}
       {orders && orders.length > 0 && (
         <div style={{ marginTop: 32 }}>
-          <h3 style={{ marginBottom: 14 }}>Recent Orders</h3>
+          <h3 style={{ marginBottom: 14 }}>{t('ph2_recent_orders')}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {orders.slice(0, 5).map((o) => (
               <div key={o.id} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -186,7 +186,7 @@ export default function Pharmacy() {
                     address: o.delivery_address,
                   })}
                 >
-                  <FileDown size={14} /> Invoice
+                  <FileDown size={14} /> {t('ph2_invoice')}
                 </button>
               </div>
             ))}
@@ -200,11 +200,11 @@ export default function Pharmacy() {
           <div onClick={() => setCartOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} />
           <div className="card" style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 380, maxWidth: '90vw', borderRadius: 0, display: 'flex', flexDirection: 'column', padding: 0, animation: 'slideIn 0.3s ease' }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3>Shopping Cart ({cartCount})</h3>
+              <h3>{t('ph2_shopping_cart')} ({cartCount})</h3>
               <button onClick={() => setCartOpen(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: 'var(--text-muted)' }}>&times;</button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
-              {cart.length === 0 ? <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>Your cart is empty</p> : (
+              {cart.length === 0 ? <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>{t('ph2_cart_empty')}</p> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {cart.map((item) => (
                     <div key={item.id} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -226,10 +226,10 @@ export default function Pharmacy() {
             {cart.length > 0 && (
               <div style={{ padding: 24, borderTop: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <span style={{ fontSize: 15, fontWeight: 600 }}>Total</span>
+                  <span style={{ fontSize: 15, fontWeight: 600 }}>{t('ph2_total')}</span>
                   <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--primary-600)' }}>₹{cartTotal}</span>
                 </div>
-                <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => { setCartOpen(false); setCheckoutOpen(true) }}>Proceed to Checkout</button>
+                <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => { setCartOpen(false); setCheckoutOpen(true) }}>{t('ph2_proceed_checkout')}</button>
               </div>
             )}
           </div>
@@ -237,35 +237,35 @@ export default function Pharmacy() {
       )}
 
       {/* Checkout Modal */}
-      <Modal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} title="Checkout"
-        footer={<><button className="btn btn-ghost" onClick={() => setCheckoutOpen(false)}>Cancel</button>
+      <Modal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} title={t('ph2_checkout')}
+        footer={<><button className="btn btn-ghost" onClick={() => setCheckoutOpen(false)}>{t('ph2_cancel')}</button>
           <button className="btn btn-primary" onClick={placeOrder} disabled={!address.trim() || !paymentValid || paying}>
-            <PayingButton paying={paying} label={`Place Order - ₹${cartTotal}`} />
+            <PayingButton paying={paying} label={`${t('ph2_place_order')} ₹${cartTotal}`} />
           </button></>}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label className="label">Delivery Address *</label>
-            <textarea className="input" rows={3} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter full delivery address" />
+            <label className="label">{t('ph2_delivery_address')}</label>
+            <textarea className="input" rows={3} value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('ph2_delivery_address_placeholder')} />
           </div>
           <PaymentPanel method={paymentMethod} onMethodChange={setPaymentMethod} onValidChange={setPaymentValid} />
           <div style={{ padding: 16, background: 'var(--neutral-50)', borderRadius: 'var(--radius-sm)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span>Items</span><span>{cartCount}</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span>Delivery</span><span>Free</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 16, paddingTop: 8, borderTop: '1px solid var(--border)' }}><span>Total</span><span>₹{cartTotal}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span>{t('ph2_items')}</span><span>{cartCount}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span>{t('ph2_delivery')}</span><span>{t('ph2_free')}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 16, paddingTop: 8, borderTop: '1px solid var(--border)' }}><span>{t('ph2_total')}</span><span>₹{cartTotal}</span></div>
           </div>
         </div>
       </Modal>
 
       {/* Success Modal */}
-      <Modal open={!!orderSuccess} onClose={() => setOrderSuccess(null)} title="Order Placed!"
-        footer={<button className="btn btn-primary" onClick={() => setOrderSuccess(null)}>Done</button>}
+      <Modal open={!!orderSuccess} onClose={() => setOrderSuccess(null)} title={t('ph2_order_placed')}
+        footer={<button className="btn btn-primary" onClick={() => setOrderSuccess(null)}>{t('ph2_done')}</button>}
       >
         <div style={{ textAlign: 'center', padding: 16 }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--success-50)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
             <CheckCircle size={28} color="var(--success-500)" />
           </div>
-          <p>Your order <strong>{orderSuccess}</strong> has been placed successfully. You'll receive updates on delivery.</p>
+          <p>{t('ph2_order_success_1')} <strong>{orderSuccess}</strong> {t('ph2_order_success_2')}</p>
         </div>
       </Modal>
     </div>

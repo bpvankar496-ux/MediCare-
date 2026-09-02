@@ -48,10 +48,10 @@ function AiSymptomAnalyzer() {
         body: JSON.stringify({ symptoms: text.trim(), lang }),
       })
       const data = await res.json().catch(() => null)
-      if (!res.ok) { setErr((data && data.error) || 'Something went wrong. Please try again.'); return }
+      if (!res.ok) { setErr((data && data.error) || t('sc_err_generic')); return }
       setResult(data as AiResult)
     } catch {
-      setErr('Could not reach the AI service. Please check your connection and try again.')
+      setErr(t('sc_err_connection'))
     } finally {
       setLoading(false)
     }
@@ -62,7 +62,7 @@ function AiSymptomAnalyzer() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <Sparkles size={18} color="var(--primary-500)" />
         <h3>{t('ai_symptom_title')}</h3>
-        <span className="badge badge-info">Beta</span>
+        <span className="badge badge-info">{t('sc_beta')}</span>
       </div>
       <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
         {t('ai_symptom_subtitle')}
@@ -145,24 +145,24 @@ export default function SymptomChecker() {
 
       <div className="card" style={{ padding: 16, marginBottom: 20, background: 'var(--warning-50)', border: '1px solid var(--warning-100)' }}>
         <p style={{ fontSize: 14, color: 'var(--warning-600)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <AlertTriangle size={16} /> This tool is for informational purposes only and not a substitute for professional medical advice.
+          <AlertTriangle size={16} /> {t('sc_disclaimer_banner')}
         </p>
       </div>
 
       <AiSymptomAnalyzer />
 
-      <h3 style={{ marginBottom: 14 }}>Or Browse Common Symptoms</h3>
+      <h3 style={{ marginBottom: 14 }}>{t('sc_browse_common')}</h3>
 
       <div style={{ position: 'relative', marginBottom: 20 }}>
         <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-        <input className="input" style={{ paddingLeft: 40 }} placeholder="Search symptoms (e.g. fever, headache, cough)..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input className="input" style={{ paddingLeft: 40 }} placeholder={t('sc_search_placeholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       {selected ? (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>← Back</button>
-            <h2>Possible Conditions for "{selected.symptom}"</h2>
+            <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>← {t('sc_back')}</button>
+            <h2>{t('sc_possible_for')} "{selected.symptom}"</h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
             {selected.possible_conditions.map((c, i) => (
@@ -170,16 +170,16 @@ export default function SymptomChecker() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                   <h4>{c.condition}</h4>
                   <span className={`badge ${c.urgency === 'high' ? 'badge-error' : c.urgency === 'medium' ? 'badge-warning' : 'badge-success'}`}>
-                    {c.urgency} urgency
+                    {c.urgency} {t('sc_urgency')}
                   </span>
                 </div>
-                <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 12 }}>Consult a <strong>{c.specialty}</strong></p>
+                <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 12 }}>{t('sc_consult_a')} <strong>{c.specialty}</strong></p>
               </div>
             ))}
           </div>
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState icon={HeartPulse} title="No symptoms found" subtitle="Try searching with a different keyword." />
+        <EmptyState icon={HeartPulse} title={t('sc_no_symptoms_found')} subtitle={t('sc_try_different')} />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtered.map((s) => (
@@ -193,7 +193,7 @@ export default function SymptomChecker() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-h)' }}>{s.symptom}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.possible_conditions.length} possible conditions · {s.body_part}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.possible_conditions.length} {t('sc_possible_conditions')} · {s.body_part}</div>
               </div>
               <ChevronRight size={18} color="var(--text-muted)" />
             </div>
