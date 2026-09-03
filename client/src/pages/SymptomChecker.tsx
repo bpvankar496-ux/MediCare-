@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { HeartPulse, Search, TriangleAlert as AlertTriangle, ChevronRight, Sparkles, Loader2, Stethoscope } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, EmptyState } from '../lib/ui'
 import { API_URL, getToken } from '../lib/db'
-import { useI18n } from '../lib/i18n'
 import type { Symptom } from '../lib/types'
 
 interface AiCondition {
@@ -28,7 +27,6 @@ const urgencyBadge: Record<AiResult['urgency'], string> = {
 }
 
 function AiSymptomAnalyzer() {
-  const { lang, t } = useI18n()
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<AiResult | null>(null)
@@ -42,16 +40,13 @@ function AiSymptomAnalyzer() {
       const res = await fetch(`${API_URL}/api/ai/symptom-check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        // New feature: send the app's current language so the AI responds
-        // in Gujarati/Hindi/English instead of always English - see the
-        // language handling in server/src/routes/ai.js.
-        body: JSON.stringify({ symptoms: text.trim(), lang }),
+        body: JSON.stringify({ symptoms: text.trim() }),
       })
       const data = await res.json().catch(() => null)
-      if (!res.ok) { setErr((data && data.error) || t('sc_err_generic')); return }
+      if (!res.ok) { setErr((data && data.error) || 'Something went wrong. Please try again.'); return }
       setResult(data as AiResult)
     } catch {
-      setErr(t('sc_err_connection'))
+      setErr('Could not reach the AI service. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -61,23 +56,23 @@ function AiSymptomAnalyzer() {
     <div className="card" style={{ padding: 20, marginBottom: 28, border: '1px solid var(--primary-100)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <Sparkles size={18} color="var(--primary-500)" />
-        <h3>{t('ai_symptom_title')}</h3>
-        <span className="badge badge-info">{t('sc_beta')}</span>
+        <h3>{"AI Symptom Analysis"}</h3>
+        <span className="badge badge-info">Beta</span>
       </div>
       <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
-        {t('ai_symptom_subtitle')}
+        {"Describe how you're feeling in your own words \u2014 the AI will suggest possible causes and how urgently to see a doctor."}
       </p>
       <textarea
         className="input"
         rows={3}
-        placeholder={t('ai_symptom_placeholder')}
+        placeholder={"e.g. I have had a mild fever and sore throat for two days, plus a headache..."}
         value={text}
         onChange={(e) => setText(e.target.value)}
         maxLength={1000}
       />
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
         <button className="btn btn-primary" onClick={analyze} disabled={loading || !text.trim()}>
-          {loading ? <><Loader2 size={16} className="spin" /> {t('ai_symptom_analyzing')}</> : <><Sparkles size={16} /> {t('ai_symptom_analyze')}</>}
+          {loading ? <><Loader2 size={16} className="spin" /> {"Analyzing..."}</> : <><Sparkles size={16} /> {"Analyze Symptoms"}</>}
         </button>
       </div>
 
@@ -90,14 +85,14 @@ function AiSymptomAnalyzer() {
       {result && (
         <div className="fade-in" style={{ marginTop: 18, borderTop: '1px solid var(--border)', paddingTop: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-            <span className={`badge ${urgencyBadge[result.urgency]}`} style={{ textTransform: 'capitalize' }}>{result.urgency} {t('ai_symptom_urgency')}</span>
+            <span className={`badge ${urgencyBadge[result.urgency]}`} style={{ textTransform: 'capitalize' }}>{result.urgency} {"urgency"}</span>
             <p style={{ fontSize: 14, color: 'var(--text)', flex: 1, minWidth: 200 }}>{result.summary}</p>
           </div>
 
           {result.urgency === 'emergency' && (
             <div style={{ padding: 12, background: 'var(--error-50)', border: '1px solid var(--error-100)', borderRadius: 'var(--radius-sm)', marginBottom: 14, fontSize: 13, color: 'var(--error-600)', fontWeight: 600 }}>
               <AlertTriangle size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} />
-              {t('ai_symptom_emergency')}
+              {"This may be a medical emergency \u2014 please call emergency services or visit the nearest ER immediately."}
             </div>
           )}
 
@@ -117,7 +112,7 @@ function AiSymptomAnalyzer() {
           </div>
 
           <div style={{ padding: 12, background: 'var(--primary-50)', borderRadius: 'var(--radius-sm)', fontSize: 13, color: 'var(--primary-700)', marginBottom: 10 }}>
-            <strong>{t('ai_symptom_recommendation')}:</strong> {result.recommendation}
+            <strong>{"Recommendation"}:</strong> {result.recommendation}
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{result.disclaimer}</p>
         </div>
@@ -127,7 +122,6 @@ function AiSymptomAnalyzer() {
 }
 
 export default function SymptomChecker() {
-  const { t } = useI18n()
   const { data: symptoms, loading, error } = useSupabaseQuery<Symptom>('symptoms')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Symptom | null>(null)
@@ -136,33 +130,33 @@ export default function SymptomChecker() {
     !search || s.symptom.toLowerCase().includes(search.toLowerCase())
   ) ?? []
 
-  if (loading) return <div><PageHeader title={t('ph_symptom_checker_title')} subtitle={t('ph_symptom_checker_subtitle')} icon={HeartPulse} /><LoadingState /></div>
-  if (error) return <div><PageHeader title={t('ph_symptom_checker_title')} subtitle={t('ph_symptom_checker_subtitle')} icon={HeartPulse} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={"Symptom Checker"} subtitle={"Identify possible conditions based on your symptoms"} icon={HeartPulse} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={"Symptom Checker"} subtitle={"Identify possible conditions based on your symptoms"} icon={HeartPulse} /><ErrorState message={error} /></div>
 
   return (
     <div className="fade-in">
-      <PageHeader title={t('ph_symptom_checker_title')} subtitle={t('ph_symptom_checker_subtitle')} icon={HeartPulse} />
+      <PageHeader title={"Symptom Checker"} subtitle={"Identify possible conditions based on your symptoms"} icon={HeartPulse} />
 
       <div className="card" style={{ padding: 16, marginBottom: 20, background: 'var(--warning-50)', border: '1px solid var(--warning-100)' }}>
         <p style={{ fontSize: 14, color: 'var(--warning-600)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <AlertTriangle size={16} /> {t('sc_disclaimer_banner')}
+          <AlertTriangle size={16} /> This tool is for informational purposes only and not a substitute for professional medical advice.
         </p>
       </div>
 
       <AiSymptomAnalyzer />
 
-      <h3 style={{ marginBottom: 14 }}>{t('sc_browse_common')}</h3>
+      <h3 style={{ marginBottom: 14 }}>Or Browse Common Symptoms</h3>
 
       <div style={{ position: 'relative', marginBottom: 20 }}>
         <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-        <input className="input" style={{ paddingLeft: 40 }} placeholder={t('sc_search_placeholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input className="input" style={{ paddingLeft: 40 }} placeholder="Search symptoms (e.g. fever, headache, cough)..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       {selected ? (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>← {t('sc_back')}</button>
-            <h2>{t('sc_possible_for')} "{selected.symptom}"</h2>
+            <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>← Back</button>
+            <h2>Possible Conditions for "{selected.symptom}"</h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
             {selected.possible_conditions.map((c, i) => (
@@ -170,16 +164,16 @@ export default function SymptomChecker() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                   <h4>{c.condition}</h4>
                   <span className={`badge ${c.urgency === 'high' ? 'badge-error' : c.urgency === 'medium' ? 'badge-warning' : 'badge-success'}`}>
-                    {c.urgency} {t('sc_urgency')}
+                    {c.urgency} urgency
                   </span>
                 </div>
-                <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 12 }}>{t('sc_consult_a')} <strong>{c.specialty}</strong></p>
+                <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 12 }}>Consult a <strong>{c.specialty}</strong></p>
               </div>
             ))}
           </div>
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState icon={HeartPulse} title={t('sc_no_symptoms_found')} subtitle={t('sc_try_different')} />
+        <EmptyState icon={HeartPulse} title="No symptoms found" subtitle="Try searching with a different keyword." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtered.map((s) => (
@@ -193,7 +187,7 @@ export default function SymptomChecker() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-h)' }}>{s.symptom}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.possible_conditions.length} {t('sc_possible_conditions')} · {s.body_part}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.possible_conditions.length} possible conditions · {s.body_part}</div>
               </div>
               <ChevronRight size={18} color="var(--text-muted)" />
             </div>

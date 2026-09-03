@@ -3,7 +3,6 @@ import {
   Users, BookOpen, Star, ArrowRight, CheckCircle2, Menu, X, LayoutDashboard,
 } from 'lucide-react'
 import { useState } from 'react'
-import { useI18n } from '../lib/i18n'
 import { QuickSettings } from '../components/QuickSettings'
 
 const features = [
@@ -40,7 +39,6 @@ interface LandingProps {
 
 export default function Landing({ onGetStarted, loggedIn = false }: LandingProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const { t } = useI18n()
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
@@ -65,11 +63,11 @@ export default function Landing({ onGetStarted, loggedIn = false }: LandingProps
             <a href="#testimonials" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>Testimonials</a>
             <QuickSettings />
             {loggedIn ? (
-              <button className="btn btn-primary" onClick={onGetStarted}><LayoutDashboard size={16} /> {t('landing_go_to_dashboard')}</button>
+              <button className="btn btn-primary" onClick={onGetStarted}><LayoutDashboard size={16} /> {"Go to Dashboard"}</button>
             ) : (
               <>
-                <button className="btn btn-ghost btn-sm" onClick={onGetStarted}>{t('landing_sign_in')}</button>
-                <button className="btn btn-primary" onClick={onGetStarted}>{t('landing_get_started')}</button>
+                <button className="btn btn-ghost btn-sm" onClick={onGetStarted}>{"Sign In"}</button>
+                <button className="btn btn-primary" onClick={onGetStarted}>{"Get Started Free"}</button>
               </>
             )}
           </nav>
@@ -90,11 +88,11 @@ export default function Landing({ onGetStarted, loggedIn = false }: LandingProps
             <a href="#testimonials" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>Testimonials</a>
             <div style={{ margin: '4px 0' }}><QuickSettings /></div>
             {loggedIn ? (
-              <button className="btn btn-primary" onClick={onGetStarted}>{t('landing_go_to_dashboard')}</button>
+              <button className="btn btn-primary" onClick={onGetStarted}>{"Go to Dashboard"}</button>
             ) : (
               <>
-                <button className="btn btn-secondary" onClick={onGetStarted}>{t('landing_sign_in')}</button>
-                <button className="btn btn-primary" onClick={onGetStarted}>{t('landing_get_started')}</button>
+                <button className="btn btn-secondary" onClick={onGetStarted}>{"Sign In"}</button>
+                <button className="btn btn-primary" onClick={onGetStarted}>{"Get Started Free"}</button>
               </>
             )}
           </div>
@@ -105,25 +103,25 @@ export default function Landing({ onGetStarted, loggedIn = false }: LandingProps
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '72px 24px 48px', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 48, alignItems: 'center' }} className="dashboard-grid">
         <div className="fade-in">
           <span className="badge badge-info" style={{ marginBottom: 20 }}>
-            <HeartPulse size={13} /> {t('landing_badge')}
+            <HeartPulse size={13} /> {"Trusted healthcare platform"}
           </span>
           <h1 style={{ fontSize: 46, lineHeight: 1.1, marginBottom: 20, letterSpacing: -1 }}>
-            {t('landing_title_1')} <span style={{ color: 'var(--primary-500)' }}>{t('landing_title_2')}</span> {t('landing_title_3')}
+            {"Your Health,"} <span style={{ color: 'var(--primary-500)' }}>{"One Click"}</span> {"Away"}
           </h1>
           <p style={{ fontSize: 17, color: 'var(--text-muted)', maxWidth: 480, marginBottom: 28, lineHeight: 1.6 }}>
-            {t('landing_subtitle')}
+            {"Book doctors, order medicines, run lab tests, and get instant telemedicine consultations \u2014 MediCare+ brings your entire healthcare journey into one simple, secure app."}
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 28 }}>
             {loggedIn ? (
               <button className="btn btn-primary btn-lg" onClick={onGetStarted}>
-                <LayoutDashboard size={18} /> {t('landing_go_to_dashboard')} <ArrowRight size={16} />
+                <LayoutDashboard size={18} /> {"Go to Dashboard"} <ArrowRight size={16} />
               </button>
             ) : (
               <button className="btn btn-primary btn-lg" onClick={onGetStarted}>
-                <Stethoscope size={18} /> {t('landing_get_started')} <ArrowRight size={16} />
+                <Stethoscope size={18} /> {"Get Started Free"} <ArrowRight size={16} />
               </button>
             )}
-            <a href="#features" className="btn btn-secondary btn-lg">{t('landing_see_features')}</a>
+            <a href="#features" className="btn btn-secondary btn-lg">{"See Features"}</a>
           </div>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             {['No credit card needed', 'Free for patients', 'Setup in 2 minutes'].map((t) => (
@@ -252,7 +250,7 @@ export default function Landing({ onGetStarted, loggedIn = false }: LandingProps
             {loggedIn ? 'Your dashboard is right where you left it.' : 'Join thousands of patients and doctors already using MediCare+.'}
           </p>
           <button className="btn btn-lg" style={{ background: 'white', color: 'var(--primary-700)' }} onClick={onGetStarted}>
-            {loggedIn ? t('landing_go_to_dashboard') : 'Create Your Free Account'} <ArrowRight size={16} />
+            {loggedIn ? "Go to Dashboard" : 'Create Your Free Account'} <ArrowRight size={16} />
           </button>
         </div>
       </section>

@@ -2,10 +2,8 @@ import { useState, useMemo } from 'react'
 import { BookOpen, Search, Clock, User } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, EmptyState, Modal } from '../lib/ui'
 import type { Article } from '../lib/types'
-import { useI18n } from '../lib/i18n'
 
 export default function Articles() {
-  const { t } = useI18n()
   const { data: articles, loading, error } = useSupabaseQuery<Article>('articles', '*', 'published_at', false)
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -21,25 +19,25 @@ export default function Articles() {
     })
   }, [articles, search, categoryFilter])
 
-  if (loading) return <div><PageHeader title={t('ph_articles_title')} subtitle={t('ph_articles_subtitle')} icon={BookOpen} /><LoadingState /></div>
-  if (error) return <div><PageHeader title={t('ph_articles_title')} subtitle={t('ph_articles_subtitle')} icon={BookOpen} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={"Health Library"} subtitle={"Read trustworthy articles on health and wellness"} icon={BookOpen} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={"Health Library"} subtitle={"Read trustworthy articles on health and wellness"} icon={BookOpen} /><ErrorState message={error} /></div>
 
   return (
     <div className="fade-in">
-      <PageHeader title={t('ph_articles_title')} subtitle={t('ph_articles_subtitle')} icon={BookOpen} />
+      <PageHeader title={"Health Library"} subtitle={"Read trustworthy articles on health and wellness"} icon={BookOpen} />
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px' }}>
           <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input className="input" style={{ paddingLeft: 40 }} placeholder={t('ar_search_placeholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input" style={{ paddingLeft: 40 }} placeholder="Search articles..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <select className="input" style={{ width: 'auto' }} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-          {categories.map((c) => <option key={c} value={c}>{c === 'all' ? t('ar_all_categories') : c}</option>)}
+          {categories.map((c) => <option key={c} value={c}>{c === 'all' ? 'All Categories' : c}</option>)}
         </select>
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={BookOpen} title={t('ar_empty_title')} subtitle={t('ar_empty_subtitle')} />
+        <EmptyState icon={BookOpen} title="No articles found" subtitle="Try a different search or category." />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }} className="articles-grid">
           {filtered.map((a) => (
@@ -64,7 +62,7 @@ export default function Articles() {
       )}
 
       <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.title ?? ''}
-        footer={<button className="btn btn-primary" onClick={() => setSelected(null)}>{t('ar_close')}</button>}>
+        footer={<button className="btn btn-primary" onClick={() => setSelected(null)}>Close</button>}>
         {selected && (
           <div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>

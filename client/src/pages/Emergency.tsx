@@ -2,10 +2,8 @@ import { useState, useMemo } from 'react'
 import { MapPin, Search, Phone, Clock, Star, Ambulance } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState } from '../lib/ui'
 import type { Hospital } from '../lib/types'
-import { useI18n } from '../lib/i18n'
 
 export default function Emergency() {
-  const { t } = useI18n()
   const { data: hospitals, loading, error } = useSupabaseQuery<Hospital>('hospitals')
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -23,14 +21,12 @@ export default function Emergency() {
     })
   }, [hospitals, search, typeFilter, emergencyOnly])
 
-  const typeLabelKeys: Record<string, string> = { all: 'em_type_all', hospital: 'em_type_hospital', emergency: 'em_type_emergency', clinic: 'em_type_clinic' }
-
-  if (loading) return <div><PageHeader title={t('ph_emergency_title')} subtitle={t('ph_emergency_subtitle')} icon={MapPin} /><LoadingState /></div>
-  if (error) return <div><PageHeader title={t('ph_emergency_title')} subtitle={t('ph_emergency_subtitle')} icon={MapPin} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={"Emergency"} subtitle={"Quick access to emergency contacts and nearby hospitals"} icon={MapPin} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={"Emergency"} subtitle={"Quick access to emergency contacts and nearby hospitals"} icon={MapPin} /><ErrorState message={error} /></div>
 
   return (
     <div className="fade-in">
-      <PageHeader title={t('ph_emergency_title')} subtitle={t('ph_emergency_subtitle')} icon={MapPin} />
+      <PageHeader title={"Emergency"} subtitle={"Quick access to emergency contacts and nearby hospitals"} icon={MapPin} />
 
       <div className="card" style={{ padding: 20, marginBottom: 20, background: 'var(--error-50)', border: '1px solid var(--error-100)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -38,10 +34,10 @@ export default function Emergency() {
             <Ambulance size={24} color="white" />
           </div>
           <div>
-            <h3 style={{ color: 'var(--error-600)' }}>{t('em_hotline_title')}</h3>
+            <h3 style={{ color: 'var(--error-600)' }}>Emergency Hotline</h3>
             <p style={{ fontSize: 14, color: 'var(--error-600)' }}>
-              {t('em_hotline_text_1')} <a href="tel:108" style={{ color: 'var(--error-700)', fontWeight: 700, textDecoration: 'underline' }}>108</a> {t('em_hotline_ambulance')}
-              {' '}{t('em_hotline_text_1')} <a href="tel:112" style={{ color: 'var(--error-700)', fontWeight: 700, textDecoration: 'underline' }}>112</a> {t('em_hotline_general')}
+              Call <a href="tel:108" style={{ color: 'var(--error-700)', fontWeight: 700, textDecoration: 'underline' }}>108</a> for ambulance.
+              Call <a href="tel:112" style={{ color: 'var(--error-700)', fontWeight: 700, textDecoration: 'underline' }}>112</a> for general emergency.
             </p>
           </div>
         </div>
@@ -50,13 +46,13 @@ export default function Emergency() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px' }}>
           <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input className="input" style={{ paddingLeft: 40 }} placeholder={t('em_search_placeholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input" style={{ paddingLeft: 40 }} placeholder="Search by name or city..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <select className="input" style={{ width: 'auto' }} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-          {types.map((ty) => <option key={ty} value={ty}>{t(typeLabelKeys[ty])}</option>)}
+          {types.map((t) => <option key={t} value={t}>{t === 'all' ? 'All Types' : t.charAt(0).toUpperCase() + t.slice(1) + 's'}</option>)}
         </select>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer', fontWeight: 600 }}>
-          <input type="checkbox" checked={emergencyOnly} onChange={(e) => setEmergencyOnly(e.target.checked)} /> {t('em_emergency_only')}
+          <input type="checkbox" checked={emergencyOnly} onChange={(e) => setEmergencyOnly(e.target.checked)} /> Emergency Only
         </label>
       </div>
 
@@ -76,7 +72,7 @@ export default function Emergency() {
             {h.address && <p style={{ fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'flex-start', gap: 6 }}><MapPin size={14} color="var(--text-muted)" style={{ marginTop: 2, flexShrink: 0 }} /> {h.address}, {h.city}</p>}
             {h.phone && <p style={{ fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}><Phone size={14} color="var(--text-muted)" /> <a href={`tel:${h.phone.replace(/[^+\d]/g, '')}`} style={{ color: 'var(--primary-600)', fontWeight: 600 }}>{h.phone}</a></p>}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {h.emergency && <span className="badge badge-error">{t('em_emergency_badge')}</span>}
+              {h.emergency && <span className="badge badge-error">Emergency</span>}
               {h.open_24x7 && <span className="badge badge-success"><Clock size={11} /> 24x7</span>}
             </div>
             {h.services.length > 0 && (

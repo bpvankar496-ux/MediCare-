@@ -3,16 +3,13 @@ import { Settings as SettingsIcon, User, KeyRound, Camera, Trash2 } from 'lucide
 import { useAuth } from '../lib/auth'
 import { PageHeader } from '../lib/ui'
 import { useToast } from '../lib/toast'
-import { useI18n } from '../lib/i18n'
 
 const MAX_AVATAR_BYTES = 1.5 * 1024 * 1024
 
 // New feature: a dedicated Settings page so users can update their display
-// name, profile picture, and password. Theme/language moved to the top
-// navbar switcher (client/src/lib/ThemeLanguageSwitcher.tsx) since those
-// get reached for far more often than an account setting.
+// name, profile picture, and password. Theme moved to the top navbar
+// switcher since that gets reached for far more often than an account setting.
 export default function Settings() {
-  const { t } = useI18n()
   const { profile, updateProfile, updateAvatar, changePassword } = useAuth()
   const { showToast } = useToast()
 
@@ -30,11 +27,11 @@ export default function Settings() {
     e.target.value = ''
     if (!file) return
     if (!/^image\/(png|jpe?g|webp|gif)$/.test(file.type)) {
-      showToast(t('st_image_type_error'), 'error')
+      showToast('Please choose a PNG, JPEG, WEBP, or GIF image', 'error')
       return
     }
     if (file.size > MAX_AVATAR_BYTES) {
-      showToast(t('st_image_size_error'), 'error')
+      showToast('Image must be under 1.5MB', 'error')
       return
     }
     const reader = new FileReader()
@@ -43,7 +40,7 @@ export default function Settings() {
       const { error } = await updateAvatar(reader.result as string)
       setAvatarSaving(false)
       if (error) showToast(error, 'error')
-      else showToast(t('st_avatar_updated'), 'success')
+      else showToast('Profile picture updated', 'success')
     }
     reader.readAsDataURL(file)
   }
@@ -53,7 +50,7 @@ export default function Settings() {
     const { error } = await updateAvatar(null)
     setAvatarSaving(false)
     if (error) showToast(error, 'error')
-    else showToast(t('st_avatar_removed'), 'info')
+    else showToast('Profile picture removed', 'info')
   }
 
   const [currentPassword, setCurrentPassword] = useState('')
@@ -65,25 +62,25 @@ export default function Settings() {
   const handleNameSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!fullName.trim()) {
-      setNameMsg({ type: 'err', text: t('st_name_empty') })
+      setNameMsg({ type: 'err', text: 'Name cannot be empty' })
       return
     }
     setNameSaving(true)
     setNameMsg(null)
     const { error } = await updateProfile(fullName.trim())
     setNameSaving(false)
-    setNameMsg(error ? { type: 'err', text: error } : { type: 'ok', text: t('st_name_updated') })
+    setNameMsg(error ? { type: 'err', text: error } : { type: 'ok', text: 'Name updated' })
   }
 
   const handlePasswordSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (newPassword !== confirmPassword) {
-      setPwMsg({ type: 'err', text: t('st_passwords_mismatch') })
+      setPwMsg({ type: 'err', text: 'New passwords do not match' })
       return
     }
     const strong = newPassword.length >= 8 && /[a-zA-Z]/.test(newPassword) && /[0-9]/.test(newPassword)
     if (!strong) {
-      setPwMsg({ type: 'err', text: t('st_password_weak') })
+      setPwMsg({ type: 'err', text: 'New password must be at least 8 characters and include a letter and a number' })
       return
     }
     setPwSaving(true)
@@ -93,7 +90,7 @@ export default function Settings() {
     if (error) {
       setPwMsg({ type: 'err', text: error })
     } else {
-      setPwMsg({ type: 'ok', text: t('st_password_changed') })
+      setPwMsg({ type: 'ok', text: 'Password changed successfully' })
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
@@ -102,14 +99,14 @@ export default function Settings() {
 
   return (
     <div>
-      <PageHeader title={t('ph_settings_title')} subtitle={t('ph_settings_subtitle')} icon={SettingsIcon} />
+      <PageHeader title={"Settings"} subtitle={"Manage your account details"} icon={SettingsIcon} />
 
       <div style={{ display: 'grid', gap: 20, maxWidth: 480 }}>
         {/* Profile picture */}
         <div className="card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <Camera size={18} color="var(--primary-500)" />
-            <h3>{t('st_profile_picture')}</h3>
+            <h3>Profile Picture</h3>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{
@@ -124,55 +121,54 @@ export default function Settings() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: 'none' }} onChange={handleAvatarChange} />
               <button type="button" className="btn btn-secondary btn-sm" onClick={handleAvatarPick} disabled={avatarSaving}>
-                {avatarSaving ? t('st_saving') : t('st_upload_photo')}
+                {avatarSaving ? 'Saving...' : 'Upload New Photo'}
               </button>
               {profile?.avatar && (
                 <button type="button" className="btn btn-ghost btn-sm" onClick={handleAvatarRemove} disabled={avatarSaving} style={{ color: 'var(--error-600)' }}>
-                  <Trash2 size={14} /> {t('st_remove_photo')}
+                  <Trash2 size={14} /> Remove Photo
                 </button>
               )}
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('st_photo_hint')}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>PNG, JPEG, WEBP or GIF, under 1.5MB.</span>
             </div>
           </div>
         </div>
 
-        {/* Appearance and Language now live in the top navbar (the switcher
-            next to your profile/logout, always visible) instead of being
-            buried here - see client/src/lib/ThemeLanguageSwitcher.tsx. */}
+        {/* Appearance now lives in the top navbar (the switcher next to
+            your profile/logout, always visible) instead of being buried here. */}
 
         <form onSubmit={handleNameSave} className="card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <User size={18} color="var(--primary-500)" />
-            <h3>{t('st_profile')}</h3>
+            <h3>Profile</h3>
           </div>
-          <label className="label">{t('st_full_name')}</label>
-          <input className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t('st_full_name_placeholder')} />
+          <label className="label">Full Name</label>
+          <input className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your full name" />
           {nameMsg && (
             <p style={{ marginTop: 10, fontSize: 13, color: nameMsg.type === 'ok' ? 'var(--success-600)' : 'var(--error-600)' }}>
               {nameMsg.text}
             </p>
           )}
           <button className="btn btn-primary" type="submit" disabled={nameSaving} style={{ marginTop: 14 }}>
-            {nameSaving ? t('st_saving') : t('st_save_name')}
+            {nameSaving ? 'Saving...' : 'Save Name'}
           </button>
         </form>
 
         <form onSubmit={handlePasswordSave} className="card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <KeyRound size={18} color="var(--primary-500)" />
-            <h3>{t('st_change_password')}</h3>
+            <h3>Change Password</h3>
           </div>
           <div style={{ display: 'grid', gap: 12 }}>
             <div>
-              <label className="label">{t('st_current_password')}</label>
+              <label className="label">Current Password</label>
               <input className="input" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" />
             </div>
             <div>
-              <label className="label">{t('st_new_password')}</label>
-              <input className="input" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t('st_new_password_hint')} autoComplete="new-password" />
+              <label className="label">New Password</label>
+              <input className="input" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 8 characters, incl. a letter & number" autoComplete="new-password" />
             </div>
             <div>
-              <label className="label">{t('st_confirm_password')}</label>
+              <label className="label">Confirm New Password</label>
               <input className="input" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" />
             </div>
           </div>
@@ -182,7 +178,7 @@ export default function Settings() {
             </p>
           )}
           <button className="btn btn-primary" type="submit" disabled={pwSaving} style={{ marginTop: 14 }}>
-            {pwSaving ? t('st_updating') : t('st_update_password')}
+            {pwSaving ? 'Updating...' : 'Update Password'}
           </button>
         </form>
       </div>

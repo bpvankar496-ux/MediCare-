@@ -3,7 +3,6 @@ import { BellRing, Plus, Trash2, Clock, Bell, BellOff } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal, EmptyState } from '../lib/ui'
 import { db } from '../lib/db'
 import type { Reminder } from '../lib/types'
-import { useI18n } from '../lib/i18n'
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const dayAbbrev = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -45,7 +44,6 @@ function useReminderNotifications(reminders: Reminder[] | null) {
 }
 
 export default function Reminders() {
-  const { t } = useI18n()
   const { data: reminders, refetch, loading, error } = useSupabaseQuery<Reminder>('reminders', '*', 'created_at', false)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState({ title: '', type: 'medicine', time: '08:00', frequency: 'daily', days: [] as string[], notes: '' })
@@ -66,22 +64,22 @@ export default function Reminders() {
   const toggleActive = async (r: Reminder) => { await db.from('reminders').update({ active: !r.active }).eq('id', r.id); refetch() }
   const deleteReminder = async (id: string) => { await db.from('reminders').delete().eq('id', id); refetch() }
 
-  if (loading) return <div><PageHeader title={t('ph_reminders_title')} subtitle={t('ph_reminders_subtitle')} icon={BellRing} /><LoadingState /></div>
-  if (error) return <div><PageHeader title={t('ph_reminders_title')} subtitle={t('ph_reminders_subtitle')} icon={BellRing} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title={"Reminders"} subtitle={"Never miss a medicine dose or appointment"} icon={BellRing} /><LoadingState /></div>
+  if (error) return <div><PageHeader title={"Reminders"} subtitle={"Never miss a medicine dose or appointment"} icon={BellRing} /><ErrorState message={error} /></div>
 
   return (
     <div className="fade-in">
-      <PageHeader title={t('ph_reminders_title')} subtitle={t('ph_reminders_subtitle')} icon={BellRing} />
+      <PageHeader title={"Reminders"} subtitle={"Never miss a medicine dose or appointment"} icon={BellRing} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         {permission === 'granted' ? (
-          <span className="badge badge-success"><Bell size={13} /> {t('rm_notifications_on')}</span>
+          <span className="badge badge-success"><Bell size={13} /> Notifications on</span>
         ) : permission === 'denied' ? (
-          <span className="badge badge-neutral"><BellOff size={13} /> {t('rm_notifications_blocked')}</span>
+          <span className="badge badge-neutral"><BellOff size={13} /> Notifications blocked in browser settings</span>
         ) : (
-          <button className="btn btn-secondary btn-sm" onClick={requestPermission}><Bell size={15} /> {t('rm_enable_notifications')}</button>
+          <button className="btn btn-secondary btn-sm" onClick={requestPermission}><Bell size={15} /> Enable reminder notifications</button>
         )}
-        <button className="btn btn-primary" onClick={() => setModalOpen(true)}><Plus size={18} /> {t('rm_add_reminder')}</button>
+        <button className="btn btn-primary" onClick={() => setModalOpen(true)}><Plus size={18} /> Add Reminder</button>
       </div>
 
       {reminders && reminders.length > 0 ? (
@@ -106,29 +104,29 @@ export default function Reminders() {
                 {r.notes && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{r.notes}</div>}
               </div>
               <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(r)} style={{ minWidth: 80 }}>
-                {r.active ? <span className="badge badge-success">{t('rm_active')}</span> : <span className="badge badge-neutral">{t('rm_paused')}</span>}
+                {r.active ? <span className="badge badge-success">Active</span> : <span className="badge badge-neutral">Paused</span>}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => deleteReminder(r.id)} style={{ padding: 4 }}><Trash2 size={16} color="var(--error-500)" /></button>
             </div>
           ))}
         </div>
       ) : (
-        <EmptyState icon={BellRing} title={t('rm_empty_title')} subtitle={t('rm_empty_subtitle')} />
+        <EmptyState icon={BellRing} title="No reminders set" subtitle="Add reminders for medicines, checkups, and exercises to stay on track." />
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('rm_modal_title')}
-        footer={<><button className="btn btn-ghost" onClick={() => setModalOpen(false)}>{t('rm_cancel')}</button><button className="btn btn-primary" onClick={addReminder} disabled={!form.title}>{t('rm_save')}</button></>}
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Reminder"
+        footer={<><button className="btn btn-ghost" onClick={() => setModalOpen(false)}>Cancel</button><button className="btn btn-primary" onClick={addReminder} disabled={!form.title}>Save Reminder</button></>}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div><label className="label">{t('rm_field_title')}</label><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('rm_field_title_placeholder')} /></div>
+          <div><label className="label">Title *</label><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Take Metformin" /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label className="label">{t('rm_field_type')}</label><select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="medicine">{t('rm_opt_medicine')}</option><option value="appointment">{t('rm_opt_appointment')}</option><option value="checkup">{t('rm_opt_checkup')}</option><option value="exercise">{t('rm_opt_exercise')}</option><option value="other">{t('rm_opt_other')}</option></select></div>
-            <div><label className="label">{t('rm_field_time')}</label><input className="input" type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} /></div>
+            <div><label className="label">Type</label><select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="medicine">Medicine</option><option value="appointment">Appointment</option><option value="checkup">Checkup</option><option value="exercise">Exercise</option><option value="other">Other</option></select></div>
+            <div><label className="label">Time</label><input className="input" type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} /></div>
           </div>
-          <div><label className="label">{t('rm_field_frequency')}</label><select className="input" value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value, days: [] })}><option value="daily">{t('rm_opt_daily')}</option><option value="weekly">{t('rm_opt_weekly')}</option><option value="once">{t('rm_opt_once')}</option></select></div>
+          <div><label className="label">Frequency</label><select className="input" value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value, days: [] })}><option value="daily">Daily</option><option value="weekly">Specific Days</option><option value="once">One Time</option></select></div>
           {form.frequency === 'weekly' && (
             <div>
-              <label className="label">{t('rm_field_days')}</label>
+              <label className="label">Days</label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {days.map((d) => (
                   <button key={d} onClick={() => setForm({ ...form, days: form.days.includes(d) ? form.days.filter((x) => x !== d) : [...form.days, d] })}
@@ -139,7 +137,7 @@ export default function Reminders() {
               </div>
             </div>
           )}
-          <div><label className="label">{t('vt_col_notes')}</label><input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={t('rm_field_notes_placeholder')} /></div>
+          <div><label className="label">Notes</label><input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional notes" /></div>
         </div>
       </Modal>
     </div>

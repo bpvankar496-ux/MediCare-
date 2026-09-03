@@ -4,7 +4,6 @@ import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal, EmptySta
 import { db } from '../lib/db'
 import type { HealthRecord } from '../lib/types'
 import { getChainStatus, anchorHealthRecord, verifyHealthRecord, uploadHealthRecordFileToIpfs, type ChainStatus, type VerifyResult } from '../lib/blockchain'
-import { useI18n } from '../lib/i18n'
 
 function escapeHtml(str: string) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -88,7 +87,6 @@ const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5MB
 const ACCEPTED_FILE_TYPES = '.pdf,.jpg,.jpeg,.png,.webp'
 
 export default function Records() {
-  const { t } = useI18n()
   const { data: records, refetch, loading, error } = useSupabaseQuery<HealthRecord>('health_records', '*', 'date', false)
   const [modalOpen, setModalOpen] = useState(false)
   const [filter, setFilter] = useState('all')
@@ -107,10 +105,6 @@ export default function Records() {
   }, [])
 
   const types = ['all', 'prescription', 'report', 'document', 'discharge', 'scan']
-  const typeLabelKeys: Record<string, any> = {
-    all: 'rec_type_all', prescription: 'rec_type_prescription', report: 'rec_type_report',
-    document: 'rec_type_document', discharge: 'rec_type_discharge', scan: 'rec_type_scan',
-  }
   const filtered = records?.filter((r) => filter === 'all' || r.type === filter) ?? []
 
   const handleAnchor = async (id: string) => {
@@ -163,7 +157,7 @@ export default function Records() {
     if (!file) return
     setFileError(null)
     if (file.size > MAX_FILE_BYTES) {
-      setFileError(t('rec_file_too_big'))
+      setFileError('File must be under 5MB')
       return
     }
     const reader = new FileReader()
@@ -171,7 +165,7 @@ export default function Records() {
       setForm((f) => ({ ...f, file_url: reader.result as string }))
       setFileName(file.name)
     }
-    reader.onerror = () => setFileError(t('rec_file_read_error'))
+    reader.onerror = () => setFileError('Could not read that file')
     reader.readAsDataURL(file)
   }
 
@@ -200,25 +194,25 @@ export default function Records() {
     refetch()
   }
 
-  if (loading) return <div><PageHeader title={t('ph_records_title')} subtitle={t('ph_records_subtitle')} icon={FileText} /><LoadingState /></div>
-  if (error) return <div><PageHeader title={t('ph_records_title')} subtitle={t('ph_records_subtitle')} icon={FileText} /><ErrorState message={error} /></div>
+  if (loading) return <div><PageHeader title="Health Records" subtitle="Store and manage your medical documents" icon={FileText} /><LoadingState /></div>
+  if (error) return <div><PageHeader title="Health Records" subtitle="Store and manage your medical documents" icon={FileText} /><ErrorState message={error} /></div>
 
   const today = new Date().toISOString().split('T')[0]
 
   return (
     <div className="fade-in">
-      <PageHeader title={t('ph_records_title')} subtitle={t('ph_records_subtitle')} icon={FileText} />
+      <PageHeader title="Health Records" subtitle="Store and manage your medical documents" icon={FileText} />
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <select className="input" style={{ width: 'auto' }} value={filter} onChange={(e) => setFilter(e.target.value)}>
-          {types.map((ty) => <option key={ty} value={ty}>{t(typeLabelKeys[ty])}</option>)}
+          {types.map((t) => <option key={t} value={t}>{t === 'all' ? 'All Records' : t.charAt(0).toUpperCase() + t.slice(1) + 's'}</option>)}
         </select>
-        <button className="btn btn-primary" onClick={() => { setModalOpen(true); setSuccess(false) }}><Plus size={18} /> {t('rec_add_record')}</button>
+        <button className="btn btn-primary" onClick={() => { setModalOpen(true); setSuccess(false) }}><Plus size={18} /> Add Record</button>
       </div>
 
       {chainStatus && !chainStatus.configured && (
         <div className="card" style={{ padding: 12, marginBottom: 16, fontSize: 13, color: 'var(--text-muted)' }}>
-          {t('rec_chain_not_setup')}
+          Blockchain verification isn't set up on this server yet (no contract deployed). See <code>blockchain/README.md</code> to enable it.
         </div>
       )}
       {chainError && (
@@ -228,7 +222,7 @@ export default function Records() {
       )}
 
       {filtered.length === 0 ? (
-        <EmptyState icon={FileText} title={t('rec_empty_title')} subtitle={t('rec_empty_subtitle')} />
+        <EmptyState icon={FileText} title="No health records" subtitle="Add prescriptions, lab reports, discharge summaries, and other medical documents." />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
           {filtered.map((rec) => {
@@ -244,14 +238,14 @@ export default function Records() {
                     <span className="badge badge-neutral" style={{ textTransform: 'capitalize' }}>{rec.type}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 2 }}>
-                    <button className="btn btn-ghost btn-sm" onClick={() => exportRecordAsPdf(rec)} title={t('rec_export_pdf')} style={{ padding: 4 }}><Download size={16} color="var(--text-muted)" /></button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => exportRecordAsPdf(rec)} title="Export as PDF" style={{ padding: 4 }}><Download size={16} color="var(--text-muted)" /></button>
                     <button className="btn btn-ghost btn-sm" onClick={() => deleteRecord(rec.id)} style={{ padding: 4 }}><Trash2 size={16} color="var(--error-500)" /></button>
                   </div>
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span><strong>{t('rec_date')}:</strong> {rec.date}</span>
-                  {rec.doctor && <span><strong>{t('rec_doctor')}:</strong> {rec.doctor}</span>}
-                  {rec.hospital && <span><strong>{t('rec_hospital')}:</strong> {rec.hospital}</span>}
+                  <span><strong>Date:</strong> {rec.date}</span>
+                  {rec.doctor && <span><strong>Doctor:</strong> {rec.doctor}</span>}
+                  {rec.hospital && <span><strong>Hospital:</strong> {rec.hospital}</span>}
                   {rec.notes && <span style={{ marginTop: 4, color: 'var(--text-muted)' }}>{rec.notes}</span>}
                   {rec.file_url && (
                     <button
@@ -265,12 +259,12 @@ export default function Records() {
                       }}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, width: 'fit-content', color: 'var(--primary-500)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
                     >
-                      <Eye size={13} /> {t('rec_view_file')}
+                      <Eye size={13} /> View attached file
                     </button>
                   )}
                   {rec.ipfs_cid && (
                     <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      {t('rec_stored_ipfs')} <code>{rec.ipfs_cid.slice(0, 10)}…</code>
+                      Stored on IPFS: <code>{rec.ipfs_cid.slice(0, 10)}…</code>
                     </span>
                   )}
                 </div>
@@ -285,13 +279,13 @@ export default function Records() {
                         onClick={() => handleUploadToIpfs(rec)}
                       >
                         {chainBusyId === rec.id ? <LoaderIcon size={12} className="spin" /> : <UploadCloud size={12} />}
-                        {chainBusyId === rec.id ? t('rec_uploading') : t('rec_upload_ipfs')}
+                        {chainBusyId === rec.id ? 'Uploading...' : 'Upload file to IPFS'}
                       </button>
                     )}
                     {rec.chain_tx_hash ? (
                       <>
                         <span className="badge badge-neutral" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, width: 'fit-content' }}>
-                          <Link2 size={12} /> {t('rec_anchored_sepolia')}
+                          <Link2 size={12} /> Anchored on Sepolia
                         </span>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                           <a
@@ -300,7 +294,7 @@ export default function Records() {
                             rel="noreferrer"
                             style={{ fontSize: 12, color: 'var(--primary-500)' }}
                           >
-                            {t('rec_view_transaction')}
+                            View transaction
                           </a>
                           <button
                             className="btn btn-ghost btn-sm"
@@ -308,7 +302,7 @@ export default function Records() {
                             disabled={chainBusyId === rec.id}
                             onClick={() => handleVerify(rec.id)}
                           >
-                            {chainBusyId === rec.id ? <LoaderIcon size={12} className="spin" /> : t('rec_verify_integrity')}
+                            {chainBusyId === rec.id ? <LoaderIcon size={12} className="spin" /> : 'Verify integrity'}
                           </button>
                         </div>
                         {verifyResults[rec.id] && (
@@ -322,12 +316,14 @@ export default function Records() {
                             }}
                           >
                             {verifyResults[rec.id].matches ? <ShieldCheck size={14} /> : <ShieldAlert size={14} />}
-                            {verifyResults[rec.id].matches ? t('rec_matches_hash') : t('rec_no_match_hash')}
+                            {verifyResults[rec.id].matches
+                              ? 'Matches on-chain hash - unaltered since anchoring.'
+                              : 'Does NOT match on-chain hash - record was changed after anchoring.'}
                           </span>
                         )}
                         {verifyResults[rec.id]?.onChainFileCID && (
                           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                            {t('rec_onchain_cid')} <code>{verifyResults[rec.id].onChainFileCID}</code>
+                            On-chain file CID: <code>{verifyResults[rec.id].onChainFileCID}</code>
                           </span>
                         )}
                       </>
@@ -339,7 +335,7 @@ export default function Records() {
                         onClick={() => handleAnchor(rec.id)}
                       >
                         {chainBusyId === rec.id ? <LoaderIcon size={12} className="spin" /> : <Link2 size={12} />}
-                        {chainBusyId === rec.id ? t('rec_anchoring') : t('rec_anchor_blockchain')}
+                        {chainBusyId === rec.id ? 'Anchoring...' : 'Anchor on blockchain'}
                       </button>
                     )}
                   </div>
@@ -351,32 +347,32 @@ export default function Records() {
       )}
 
       <Modal open={modalOpen} onClose={() => { setModalOpen(false); setSuccess(false) }}
-        title={success ? t('rec_modal_title_success') : t('rec_modal_title_add')}
-        footer={success ? <button className="btn btn-primary" onClick={() => { setModalOpen(false); setSuccess(false) }}>{t('rec_done')}</button>
-          : <><button className="btn btn-ghost" onClick={() => setModalOpen(false)}>{t('rec_cancel')}</button><button className="btn btn-primary" onClick={addRecord} disabled={!form.title || !form.date}>{t('rec_save_record')}</button></>}
+        title={success ? 'Record Added!' : 'Add Health Record'}
+        footer={success ? <button className="btn btn-primary" onClick={() => { setModalOpen(false); setSuccess(false) }}>Done</button>
+          : <><button className="btn btn-ghost" onClick={() => setModalOpen(false)}>Cancel</button><button className="btn btn-primary" onClick={addRecord} disabled={!form.title || !form.date}>Save Record</button></>}
       >
         {success ? (
           <div style={{ textAlign: 'center', padding: 16 }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--success-50)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
               <CheckCircle size={28} color="var(--success-500)" />
             </div>
-            <p>{t('rec_success_message')}</p>
+            <p>Your health record has been saved.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div><label className="label">{t('rec_field_title')}</label><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('rec_field_title_placeholder')} /></div>
+            <div><label className="label">Title *</label><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Blood Test Report" /></div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div><label className="label">{t('rec_field_type')}</label><select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="document">{t('rec_opt_document')}</option><option value="prescription">{t('rec_opt_prescription')}</option><option value="report">{t('rec_opt_report')}</option><option value="discharge">{t('rec_opt_discharge')}</option><option value="scan">{t('rec_opt_scan')}</option></select></div>
-              <div><label className="label">{t('rec_field_date')}</label><input className="input" type="date" max={today} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
+              <div><label className="label">Type</label><select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="document">Document</option><option value="prescription">Prescription</option><option value="report">Lab Report</option><option value="discharge">Discharge Summary</option><option value="scan">Scan/X-Ray</option></select></div>
+              <div><label className="label">Date *</label><input className="input" type="date" max={today} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div><label className="label">{t('rec_doctor')}</label><input className="input" value={form.doctor} onChange={(e) => setForm({ ...form, doctor: e.target.value })} placeholder={t('rec_field_doctor_placeholder')} /></div>
-              <div><label className="label">{t('rec_hospital')}</label><input className="input" value={form.hospital} onChange={(e) => setForm({ ...form, hospital: e.target.value })} placeholder={t('rec_field_hospital_placeholder')} /></div>
+              <div><label className="label">Doctor</label><input className="input" value={form.doctor} onChange={(e) => setForm({ ...form, doctor: e.target.value })} placeholder="Doctor name" /></div>
+              <div><label className="label">Hospital</label><input className="input" value={form.hospital} onChange={(e) => setForm({ ...form, hospital: e.target.value })} placeholder="Hospital name" /></div>
             </div>
-            <div><label className="label">{t('rec_field_notes')}</label><textarea className="input" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={t('rec_field_notes_placeholder')} /></div>
+            <div><label className="label">Notes</label><textarea className="input" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any additional notes" /></div>
 
             <div>
-              <label className="label">{t('rec_field_attach')}</label>
+              <label className="label">Attach file (PDF or image, optional)</label>
               {form.file_url ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                   <Paperclip size={14} color="var(--text-muted)" />
@@ -387,7 +383,7 @@ export default function Records() {
                 </div>
               ) : (
                 <label className="btn btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                  <Paperclip size={16} /> {t('rec_choose_file')}
+                  <Paperclip size={16} /> Choose file
                   <input type="file" accept={ACCEPTED_FILE_TYPES} onChange={handleFileSelect} style={{ display: 'none' }} />
                 </label>
               )}

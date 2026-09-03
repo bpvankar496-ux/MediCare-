@@ -7,7 +7,6 @@ import { db } from '../lib/db'
 import { LoadingState, EmptyState, Modal } from '../lib/ui'
 import Settings from './Settings'
 import { QuickSettings } from '../components/QuickSettings'
-import { useI18n } from '../lib/i18n'
 import type { Doctor } from '../lib/types'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -31,7 +30,6 @@ interface Inquiry {
 const emptyDoctorForm = { profile_id: '', specialty: '', qualification: '', experience_years: '', fee: '', hospital: '', city: '', about: '' }
 
 export default function ReceptionistDashboard() {
-  const { t } = useI18n()
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
   const [tab, setTab] = useState<'inquiries' | 'doctors' | 'analytics' | 'settings'>('inquiries')
@@ -79,7 +77,7 @@ export default function ReceptionistDashboard() {
   // once added (only link/unlink). This deletes the catalog entry itself -
   // the doctor's login account is untouched, so they can be re-added later.
   const deleteDoctor = async (doctorRowId: string, name: string) => {
-    if (!window.confirm(`${t('rd_remove_confirm_1')} ${name} ${t('rd_remove_confirm_2')}`)) return
+    if (!window.confirm(`Remove ${name} from the doctor catalog? Patients will no longer be able to find or book them. This cannot be undone.`)) return
     await db.from('doctors').delete().eq('id', doctorRowId)
     load()
   }
@@ -88,8 +86,8 @@ export default function ReceptionistDashboard() {
 
   const createDoctorEntry = async () => {
     const chosenProfile = doctorProfiles.find((p) => p.id === doctorForm.profile_id)
-    if (!chosenProfile) { setAddDoctorError(t('rd_err_pick_profile')); return }
-    if (!doctorForm.specialty || !doctorForm.qualification) { setAddDoctorError(t('rd_err_specialty_qual')); return }
+    if (!chosenProfile) { setAddDoctorError('Pick which doctor account this listing belongs to'); return }
+    if (!doctorForm.specialty || !doctorForm.qualification) { setAddDoctorError('Specialty and qualification are required'); return }
     setAddingDoctor(true)
     setAddDoctorError(null)
     const { error } = await db.from('doctors').insert({
@@ -111,7 +109,6 @@ export default function ReceptionistDashboard() {
   }
 
   const statusBadge = (s: string) => s === 'open' ? 'badge-warning' : s === 'in_progress' ? 'badge-info' : 'badge-success'
-  const statusLabel = (s: string) => s === 'open' ? t('rd_status_open') : s === 'in_progress' ? t('rd_status_in_progress') : t('rd_status_resolved')
 
   // Analytics: inquiry status breakdown + doctor count per specialty.
   const inquiryStatusData = useMemo(() => {
@@ -139,29 +136,29 @@ export default function ReceptionistDashboard() {
             <ShieldPlus color="white" size={20} />
           </div>
           <div>
-            <div style={{ fontWeight: 700, color: 'var(--text-h)' }}>{t('rd_portal_title')}</div>
+            <div style={{ fontWeight: 700, color: 'var(--text-h)' }}>MediCare+ Reception Desk</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{profile?.full_name || profile?.email}</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <QuickSettings />
-          <button className="btn btn-ghost btn-sm" onClick={signOut}><LogOut size={16} /> {t('rd_sign_out')}</button>
+          <button className="btn btn-ghost btn-sm" onClick={signOut}><LogOut size={16} /> Sign out</button>
         </div>
       </header>
 
       <main style={{ padding: '28px 24px', maxWidth: 1000, margin: '0 auto' }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
           <button className={`btn btn-sm ${tab === 'inquiries' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('inquiries')}>
-            <MessageCircle size={15} /> {t('rd_inquiries')} {inquiries.filter((i) => i.status === 'open').length > 0 && `(${inquiries.filter((i) => i.status === 'open').length})`}
+            <MessageCircle size={15} /> Inquiries {inquiries.filter((i) => i.status === 'open').length > 0 && `(${inquiries.filter((i) => i.status === 'open').length})`}
           </button>
           <button className={`btn btn-sm ${tab === 'doctors' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('doctors')}>
-            <Link2 size={15} /> {t('rd_link_doctors')}
+            <Link2 size={15} /> Link Doctors
           </button>
           <button className={`btn btn-sm ${tab === 'analytics' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('analytics')}>
-            <BarChart3 size={15} /> {t('rd_analytics')}
+            <BarChart3 size={15} /> Analytics
           </button>
           <button className={`btn btn-sm ${tab === 'settings' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('settings')}>
-            <SettingsIcon size={15} /> {t('rd_settings')}
+            <SettingsIcon size={15} /> Settings
           </button>
         </div>
 
@@ -169,7 +166,7 @@ export default function ReceptionistDashboard() {
           <Settings />
         ) : loading ? <LoadingState /> : tab === 'inquiries' ? (
           inquiries.length === 0 ? (
-            <EmptyState icon={HeartHandshake} title={t('rd_no_inquiries')} subtitle={t('rd_no_inquiries_sub')} />
+            <EmptyState icon={HeartHandshake} title="No inquiries" subtitle="Patient help requests will show up here." />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {inquiries.map((inq) => (
@@ -179,12 +176,12 @@ export default function ReceptionistDashboard() {
                       <div style={{ fontWeight: 700 }}>{inq.subject}</div>
                       <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{inq.patient_name} · {inq.patient_email}</div>
                     </div>
-                    <span className={`badge ${statusBadge(inq.status)}`} style={{ textTransform: 'capitalize' }}>{statusLabel(inq.status)}</span>
+                    <span className={`badge ${statusBadge(inq.status)}`} style={{ textTransform: 'capitalize' }}>{inq.status.replace('_', ' ')}</span>
                   </div>
                   <p style={{ fontSize: 14, marginTop: 10 }}>{inq.message}</p>
                   {inq.reply && (
                     <div style={{ marginTop: 10, padding: 10, background: 'var(--primary-50)', borderRadius: 'var(--radius-sm)', fontSize: 13 }}>
-                      <strong>{t('rd_reply_sent')}</strong> {inq.reply}
+                      <strong>Reply sent:</strong> {inq.reply}
                     </div>
                   )}
                   {inq.status !== 'resolved' && (
@@ -192,12 +189,12 @@ export default function ReceptionistDashboard() {
                       <input
                         className="input"
                         style={{ flex: '1 1 200px' }}
-                        placeholder={t('rd_reply_placeholder')}
+                        placeholder="Type a reply..."
                         value={replyDrafts[inq.id] ?? inq.reply ?? ''}
                         onChange={(e) => setReplyDrafts({ ...replyDrafts, [inq.id]: e.target.value })}
                       />
-                      <button className="btn btn-secondary btn-sm" onClick={() => updateInquiry(inq.id, { reply: replyDrafts[inq.id] ?? '', status: 'in_progress' })}>{t('rd_send_reply')}</button>
-                      <button className="btn btn-primary btn-sm" onClick={() => updateInquiry(inq.id, { status: 'resolved', reply: replyDrafts[inq.id] ?? inq.reply ?? '' })}><CheckCircle size={14} /> {t('rd_mark_resolved')}</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => updateInquiry(inq.id, { reply: replyDrafts[inq.id] ?? '', status: 'in_progress' })}>Send Reply</button>
+                      <button className="btn btn-primary btn-sm" onClick={() => updateInquiry(inq.id, { status: 'resolved', reply: replyDrafts[inq.id] ?? inq.reply ?? '' })}><CheckCircle size={14} /> Mark Resolved</button>
                     </div>
                   )}
                 </div>
@@ -208,20 +205,21 @@ export default function ReceptionistDashboard() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 560 }}>
-                {t('rd_link_doctors_intro')}
+                Link a doctor's login account to their catalog listing so their booked appointments appear on their own dashboard,
+                or create a brand-new listing for a doctor who just signed up.
               </p>
               <button className="btn btn-primary btn-sm" onClick={() => { setDoctorForm(emptyDoctorForm); setAddDoctorError(null); setAddDoctorOpen(true) }} disabled={unlinkedDoctorProfiles.length === 0}>
-                <UserPlus size={15} /> {t('rd_add_new_doctor')}
+                <UserPlus size={15} /> Add New Doctor
               </button>
             </div>
             {unlinkedDoctorProfiles.length === 0 && doctorProfiles.length > 0 && (
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>{t('rd_all_linked')}</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>All doctor accounts are already linked to a listing.</p>
             )}
             {doctorProfiles.length === 0 && (
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>{t('rd_none_signed_up')}</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>No one has signed up as a Doctor yet — once they do, they'll appear here to add.</p>
             )}
             {doctorRows.length === 0 ? (
-              <EmptyState icon={Link2} title={t('rd_no_doctors_catalog')} subtitle={t('rd_no_doctors_catalog_sub')} />
+              <EmptyState icon={Link2} title="No doctors in catalog" subtitle="Use “Add New Doctor” above once a doctor has signed up." />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {doctorRows.map((d) => (
@@ -232,18 +230,18 @@ export default function ReceptionistDashboard() {
                     </div>
                     {d.profile_id ? (
                       <>
-                        <span className="badge badge-success">{t('rd_linked')}</span>
-                        <button className="btn btn-ghost btn-sm" onClick={() => unlinkDoctor(d.id)}>{t('rd_unlink')}</button>
+                        <span className="badge badge-success">Linked</span>
+                        <button className="btn btn-ghost btn-sm" onClick={() => unlinkDoctor(d.id)}>Unlink</button>
                       </>
                     ) : (
                       <select className="input" style={{ width: 'auto' }} defaultValue="" onChange={(e) => { if (e.target.value) linkDoctor(d.id, e.target.value) }}>
-                        <option value="">{t('rd_link_to_account')}</option>
+                        <option value="">Link to account...</option>
                         {unlinkedDoctorProfiles.map((p) => (
                           <option key={p.id} value={p.id}>{p.full_name} ({p.email})</option>
                         ))}
                       </select>
                     )}
-                    <button className="btn btn-ghost btn-sm" onClick={() => deleteDoctor(d.id, d.name)} title={t('rd_remove_catalog')} style={{ padding: 6 }}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => deleteDoctor(d.id, d.name)} title="Remove from catalog" style={{ padding: 6 }}>
                       <Trash2 size={16} color="var(--error-500)" />
                     </button>
                   </div>
@@ -254,9 +252,9 @@ export default function ReceptionistDashboard() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }} className="dashboard-grid">
             <div className="card" style={{ padding: 20 }}>
-              <h4 style={{ marginBottom: 14 }}>{t('rd_inquiries_by_status')}</h4>
+              <h4 style={{ marginBottom: 14 }}>Inquiries by Status</h4>
               {inquiries.length === 0 ? (
-                <EmptyState icon={MessageCircle} title={t('rd_no_data_yet')} subtitle={t('rd_inquiry_stats_sub')} />
+                <EmptyState icon={MessageCircle} title="No data yet" subtitle="Inquiry stats will appear once patients reach out." />
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
@@ -272,9 +270,9 @@ export default function ReceptionistDashboard() {
               )}
             </div>
             <div className="card" style={{ padding: 20 }}>
-              <h4 style={{ marginBottom: 14 }}>{t('rd_doctors_by_specialty')}</h4>
+              <h4 style={{ marginBottom: 14 }}>Doctors by Specialty</h4>
               {specialtyData.length === 0 ? (
-                <EmptyState icon={Link2} title={t('rd_no_doctors_yet')} subtitle={t('rd_no_doctors_yet_sub')} />
+                <EmptyState icon={Link2} title="No doctors yet" subtitle="Add doctors to the catalog to see this breakdown." />
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={specialtyData} layout="vertical" margin={{ left: 24 }}>
@@ -294,19 +292,19 @@ export default function ReceptionistDashboard() {
       <Modal
         open={addDoctorOpen}
         onClose={() => setAddDoctorOpen(false)}
-        title={t('rd_add_new_doctor')}
+        title="Add New Doctor"
         footer={
           <>
-            <button className="btn btn-ghost" onClick={() => setAddDoctorOpen(false)}>{t('rd_cancel')}</button>
-            <button className="btn btn-primary" onClick={createDoctorEntry} disabled={addingDoctor}>{addingDoctor ? t('rd_adding') : t('rd_add_doctor')}</button>
+            <button className="btn btn-ghost" onClick={() => setAddDoctorOpen(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={createDoctorEntry} disabled={addingDoctor}>{addingDoctor ? 'Adding...' : 'Add Doctor'}</button>
           </>
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
-            <label className="label">{t('rd_doctor_account_req')}</label>
+            <label className="label">Doctor account *</label>
             <select className="input" value={doctorForm.profile_id} onChange={(e) => setDoctorForm({ ...doctorForm, profile_id: e.target.value })}>
-              <option value="">{t('rd_select_signed_up')}</option>
+              <option value="">Select a signed-up doctor...</option>
               {unlinkedDoctorProfiles.map((p) => (
                 <option key={p.id} value={p.id}>{p.full_name} ({p.email})</option>
               ))}
@@ -314,32 +312,32 @@ export default function ReceptionistDashboard() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label className="label">{t('rd_specialty_req')}</label>
-              <input className="input" value={doctorForm.specialty} onChange={(e) => setDoctorForm({ ...doctorForm, specialty: e.target.value })} placeholder={t('rd_specialty_placeholder')} />
+              <label className="label">Specialty *</label>
+              <input className="input" value={doctorForm.specialty} onChange={(e) => setDoctorForm({ ...doctorForm, specialty: e.target.value })} placeholder="e.g. Cardiologist" />
             </div>
             <div>
-              <label className="label">{t('rd_qualification_req')}</label>
-              <input className="input" value={doctorForm.qualification} onChange={(e) => setDoctorForm({ ...doctorForm, qualification: e.target.value })} placeholder={t('rd_qualification_placeholder')} />
+              <label className="label">Qualification *</label>
+              <input className="input" value={doctorForm.qualification} onChange={(e) => setDoctorForm({ ...doctorForm, qualification: e.target.value })} placeholder="e.g. MBBS, MD" />
             </div>
             <div>
-              <label className="label">{t('rd_experience')}</label>
+              <label className="label">Experience (years)</label>
               <input className="input" type="number" value={doctorForm.experience_years} onChange={(e) => setDoctorForm({ ...doctorForm, experience_years: e.target.value })} />
             </div>
             <div>
-              <label className="label">{t('rd_fee')}</label>
+              <label className="label">Consultation Fee</label>
               <input className="input" type="number" value={doctorForm.fee} onChange={(e) => setDoctorForm({ ...doctorForm, fee: e.target.value })} />
             </div>
             <div>
-              <label className="label">{t('rd_hospital')}</label>
+              <label className="label">Hospital</label>
               <input className="input" value={doctorForm.hospital} onChange={(e) => setDoctorForm({ ...doctorForm, hospital: e.target.value })} />
             </div>
             <div>
-              <label className="label">{t('rd_city')}</label>
+              <label className="label">City</label>
               <input className="input" value={doctorForm.city} onChange={(e) => setDoctorForm({ ...doctorForm, city: e.target.value })} />
             </div>
           </div>
           <div>
-            <label className="label">{t('rd_about')}</label>
+            <label className="label">About</label>
             <textarea className="input" rows={2} value={doctorForm.about} onChange={(e) => setDoctorForm({ ...doctorForm, about: e.target.value })} />
           </div>
           {addDoctorError && <p style={{ color: 'var(--error-600)', fontSize: 13 }}>{addDoctorError}</p>}

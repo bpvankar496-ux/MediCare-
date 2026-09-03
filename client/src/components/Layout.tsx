@@ -6,30 +6,28 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../lib/auth'
-import { useI18n, type TranslationKey } from '../lib/i18n'
 import { QuickSettings } from './QuickSettings'
 
-const navItems: { to: string; icon: typeof LayoutDashboard; labelKey: TranslationKey }[] = [
-  { to: '/', icon: LayoutDashboard, labelKey: 'nav_dashboard' },
-  { to: '/doctors', icon: Stethoscope, labelKey: 'nav_doctors' },
-  { to: '/consultations', icon: Video, labelKey: 'nav_consultations' },
-  { to: '/pharmacy', icon: Pill, labelKey: 'nav_pharmacy' },
-  { to: '/lab-tests', icon: FlaskConical, labelKey: 'nav_lab_tests' },
-  { to: '/records', icon: FileText, labelKey: 'nav_records' },
-  { to: '/vitals', icon: Activity, labelKey: 'nav_vitals' },
-  { to: '/reminders', icon: BellRing, labelKey: 'nav_reminders' },
-  { to: '/symptom-checker', icon: HeartPulse, labelKey: 'nav_symptom_checker' },
-  { to: '/calculators', icon: Calculator, labelKey: 'nav_calculators' },
-  { to: '/emergency', icon: MapPin, labelKey: 'nav_emergency' },
-  { to: '/articles', icon: BookOpen, labelKey: 'nav_articles' },
-  { to: '/family', icon: Users, labelKey: 'nav_family' },
-  { to: '/inquiries', icon: HeartHandshake, labelKey: 'nav_inquiries' },
+const navItems: { to: string; icon: typeof LayoutDashboard; label: string }[] = [
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/doctors', icon: Stethoscope, label: 'Find Doctors' },
+  { to: '/consultations', icon: Video, label: 'Telemedicine' },
+  { to: '/pharmacy', icon: Pill, label: 'Pharmacy' },
+  { to: '/lab-tests', icon: FlaskConical, label: 'Lab Tests' },
+  { to: '/records', icon: FileText, label: 'Health Records' },
+  { to: '/vitals', icon: Activity, label: 'Vitals Tracker' },
+  { to: '/reminders', icon: BellRing, label: 'Reminders' },
+  { to: '/symptom-checker', icon: HeartPulse, label: 'Symptom Checker' },
+  { to: '/calculators', icon: Calculator, label: 'Health Tools' },
+  { to: '/emergency', icon: MapPin, label: 'Emergency' },
+  { to: '/articles', icon: BookOpen, label: 'Health Library' },
+  { to: '/family', icon: Users, label: 'Family Members' },
+  { to: '/inquiries', icon: HeartHandshake, label: 'Ask Reception' },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { user, profile, signOut } = useAuth()
-  const { t } = useI18n()
   const displayName = profile?.full_name?.trim() || user?.email || 'User Account'
 
   return (
@@ -94,7 +92,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }}
             >
               <item.icon size={18} />
-              {t(item.labelKey)}
+              {item.label}
             </NavLink>
           ))}
         </nav>
@@ -114,10 +112,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-h)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Free Plan</div>
             </div>
-            <Link to="/settings" onClick={() => setMobileOpen(false)} title={t('nav_settings')} style={{ display: 'inline-flex', background: 'none', border: 'none', padding: 6, color: 'var(--text-muted)', flexShrink: 0 }}>
+            <Link to="/settings" onClick={() => setMobileOpen(false)} title="Settings" style={{ display: 'inline-flex', background: 'none', border: 'none', padding: 6, color: 'var(--text-muted)', flexShrink: 0 }}>
               <SettingsIcon size={18} />
             </Link>
-            <button onClick={signOut} title={t('nav_sign_out')} style={{ background: 'none', border: 'none', padding: 6, color: 'var(--text-muted)', flexShrink: 0 }}>
+            <button onClick={signOut} title="Sign out" style={{ background: 'none', border: 'none', padding: 6, color: 'var(--text-muted)', flexShrink: 0 }}>
               <LogOut size={18} />
             </button>
           </div>
@@ -134,7 +132,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Top bar - theme + language switcher, visible on every screen size
+        {/* Top bar - theme switcher, visible on every screen size
             right at the top, not tucked away in Settings. */}
         <div style={{
           display: 'flex', justifyContent: 'flex-end', alignItems: 'center',

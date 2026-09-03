@@ -29,24 +29,10 @@ Rules:
 - Never invent lab results or prescribe medication or dosages.
 - Keep every string field short (under 25 words).
 - Output must be valid JSON and nothing else.
-- {{LANGUAGE_INSTRUCTION}}`
-
-// New feature: respond in the language the patient has selected in the app
-// (Settings / navbar language switcher - see client/src/lib/i18n.tsx),
-// not just English. The "condition" and "specialty" medical terms stay in
-// English for clinical clarity (that's what a real doctor/pharmacy will
-// recognize), but every other field is written in the requested language.
-const LANGUAGE_NAMES = { en: 'English', gu: 'Gujarati', hi: 'Hindi' }
-function languageInstruction(lang) {
-  const name = LANGUAGE_NAMES[lang] || LANGUAGE_NAMES.en
-  if (lang === 'en') {
-    return 'Write every field in English.'
-  }
-  return `Write "summary", "explanation", "recommendation", and "disclaimer" in ${name} (natural, everyday ${name}, not a literal word-for-word translation). Keep "condition" and "specialty" in English medical terminology, since that's what patients need to search for or tell a pharmacist/doctor.`
-}
+- Write every field in English.`
 
 router.post('/symptom-check', requireAuth, async (req, res) => {
-  const { symptoms, lang } = req.body || {}
+  const { symptoms } = req.body || {}
   if (!symptoms || typeof symptoms !== 'string' || !symptoms.trim()) {
     return res.status(400).json({ error: 'Please describe your symptoms first.' })
   }
