@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Stethoscope, Search, MapPin, Clock, Award, DollarSign, Calendar, CircleCheck as CheckCircle, Star, MessageSquarePlus, X } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal, StarRating, DoctorAvatar } from '../lib/ui'
 import { useToast } from '../lib/toast'
@@ -7,6 +8,7 @@ import { useAuth } from '../lib/auth'
 import type { Doctor, Appointment, Review } from '../lib/types'
 
 export default function Doctors() {
+  const location = useLocation()
   const { data: doctors, loading, error } = useSupabaseQuery<Doctor>('doctors')
   const { data: appointments, refetch: refetchAppts } = useSupabaseQuery<Appointment>('appointments', '*', 'date', false)
   const { data: reviews, refetch: refetchReviews } = useSupabaseQuery<Review>('reviews', '*', 'created_at', false)
@@ -17,6 +19,17 @@ export default function Doctors() {
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
   const [bookingSuccess, setBookingSuccess] = useState(false)
   const [reviewsDoctor, setReviewsDoctor] = useState<Doctor | null>(null)
+
+  // New feature: arriving here from the AI Symptom Checker's "specialty"
+  // suggestion (see SymptomChecker.tsx) pre-applies that specialty filter,
+  // so the recommendation actually leads somewhere useful instead of just
+  // being a label. Only applied once on arrival - the person can still
+  // change/clear the filter normally afterwards.
+  useEffect(() => {
+    const suggested = (location.state as { specialty?: string } | null)?.specialty
+    if (suggested) setSpecialtyFilter(suggested)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const specialties = useMemo(() => {
     const set = new Set(doctors?.map((d) => d.specialty) ?? [])

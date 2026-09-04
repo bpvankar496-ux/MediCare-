@@ -20,6 +20,7 @@ export interface Doctor {
 export interface Appointment {
   id: string
   doctor_id: string | null
+  patient_id?: string | null
   patient_name: string
   patient_age: number | null
   patient_gender: string | null
@@ -101,6 +102,12 @@ export interface HealthRecord {
   chain_block_number?: number | null
   chain_network?: string | null
   anchored_at?: string | null
+  // New feature: who actually added this record - lets the patient (and a
+  // treating doctor) tell a doctor-added note apart from one the patient
+  // typed in themselves. See server/src/models/HealthRecord.js.
+  added_by_role?: 'patient' | 'doctor'
+  added_by_id?: string | null
+  doctor_id?: string | null
 }
 
 export interface Vital {
@@ -163,7 +170,9 @@ export interface FamilyMember {
 
 export interface Consultation {
   id: string
+  doctor_id?: string | null
   doctor_name: string
+  patient_id?: string | null
   patient_name: string
   date: string
   time_slot: string

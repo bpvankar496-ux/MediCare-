@@ -35,14 +35,15 @@ export default function Dashboard() {
       {/* Hero */}
       <div className="card" style={{
         padding: '32px 36px', marginBottom: 24,
-        background: 'linear-gradient(135deg, var(--primary-500), var(--primary-700))',
+        backgroundImage: 'linear-gradient(135deg, rgba(13,138,124,0.55), rgba(8,90,83,0.65)), url(https://images.unsplash.com/photo-1755995083683-50d08cd83d09?auto=format&fit=crop&w=1400&q=70)',
+        backgroundSize: 'cover', backgroundPosition: 'center',
         border: 'none', color: 'white', position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
         <div style={{ position: 'absolute', right: 60, bottom: -60, width: 150, height: 150, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ position: 'relative' }}>
-          <h1 style={{ color: 'white', fontSize: 28, marginBottom: 8 }}>{firstName ? `Welcome back, ${firstName}` : 'Welcome to MediCare+'}</h1>
-          <p style={{ fontSize: 16, opacity: 0.9, marginBottom: 20, maxWidth: 500 }}>
+          <h1 style={{ color: 'white', fontSize: 28, marginBottom: 8, textShadow: '0 1px 4px rgba(0,0,0,0.35)' }}>{firstName ? `Welcome back, ${firstName}` : 'Welcome to MediCare+'}</h1>
+          <p style={{ fontSize: 16, opacity: 0.95, marginBottom: 20, maxWidth: 500, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
             Your complete healthcare companion. Book appointments, order medicines, track your health, and more — all in one place.
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>

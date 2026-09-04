@@ -135,7 +135,8 @@ export default function Landing({ onGetStarted, loggedIn = false }: LandingProps
         {/* Hero illustration card */}
         <div className="card fade-in" style={{
           padding: 28, position: 'relative', overflow: 'hidden',
-          background: 'linear-gradient(135deg, var(--primary-500), var(--primary-700))', border: 'none',
+          backgroundImage: 'linear-gradient(135deg, rgba(13,138,124,0.55), rgba(8,90,83,0.65)), url(https://images.unsplash.com/photo-1758691461957-474a7686e388?auto=format&fit=crop&w=1200&q=70)',
+          backgroundSize: 'cover', backgroundPosition: 'center', border: 'none',
         }}>
           <div style={{ position: 'absolute', right: -50, top: -50, width: 220, height: 220, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ position: 'absolute', left: -40, bottom: -60, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />

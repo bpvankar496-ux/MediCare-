@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { HeartPulse, Search, TriangleAlert as AlertTriangle, ChevronRight, Sparkles, Loader2, Stethoscope } from 'lucide-react'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, EmptyState } from '../lib/ui'
 import { API_URL, getToken } from '../lib/db'
@@ -27,6 +28,7 @@ const urgencyBadge: Record<AiResult['urgency'], string> = {
 }
 
 function AiSymptomAnalyzer() {
+  const navigate = useNavigate()
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<AiResult | null>(null)
@@ -104,9 +106,15 @@ function AiSymptomAnalyzer() {
                   <span className={`badge ${c.likelihood === 'high' ? 'badge-error' : c.likelihood === 'medium' ? 'badge-warning' : 'badge-neutral'}`}>{c.likelihood}</span>
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{c.explanation}</p>
-                <p style={{ fontSize: 12, color: 'var(--primary-600)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Stethoscope size={12} /> {c.specialty}
-                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/doctors', { state: { specialty: c.specialty } })}
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: 12, color: 'var(--primary-600)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 0' }}
+                  title={`Find a ${c.specialty} on MediCare+`}
+                >
+                  <Stethoscope size={12} /> {c.specialty} <ChevronRight size={12} />
+                </button>
               </div>
             ))}
           </div>

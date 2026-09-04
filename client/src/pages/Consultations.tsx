@@ -16,7 +16,7 @@ export default function Consultations() {
   const { data: doctors } = useSupabaseQuery<Doctor>('doctors')
   const [modalOpen, setModalOpen] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [form, setForm] = useState({ doctor_name: '', patient_name: '', date: '', time_slot: '', mode: 'video', symptoms: '' })
+  const [form, setForm] = useState({ doctor_id: '', doctor_name: '', patient_name: '', date: '', time_slot: '', mode: 'video', symptoms: '' })
   const [err, setErr] = useState<string | null>(null)
   const [activeCall, setActiveCall] = useState<Consultation | null>(null)
 
@@ -35,13 +35,13 @@ export default function Consultations() {
     if (!form.doctor_name || !form.patient_name || !form.date || !form.time_slot) { setErr('Please fill all required fields'); return }
     setErr(null)
     const { error } = await db.from('consultations').insert({
-      doctor_name: form.doctor_name, patient_name: form.patient_name,
+      doctor_id: form.doctor_id || null, doctor_name: form.doctor_name, patient_name: form.patient_name,
       date: form.date, time_slot: form.time_slot, mode: form.mode,
       symptoms: form.symptoms || null, status: 'scheduled',
     })
     if (error) { setErr(error.message); return }
     setSuccess(true); refetch()
-    setForm({ doctor_name: '', patient_name: '', date: '', time_slot: '', mode: 'video', symptoms: '' })
+    setForm({ doctor_id: '', doctor_name: '', patient_name: '', date: '', time_slot: '', mode: 'video', symptoms: '' })
   }
 
   const modeIcon = (mode: string) => mode === 'video' ? <VideoIcon size={16} /> : mode === 'phone' ? <Phone size={16} /> : <MessageSquare size={16} />
@@ -181,9 +181,16 @@ export default function Consultations() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
               <label className="label">Select Doctor *</label>
-              <select className="input" value={form.doctor_name} onChange={(e) => setForm({ ...form, doctor_name: e.target.value })}>
+              <select
+                className="input"
+                value={form.doctor_id}
+                onChange={(e) => {
+                  const chosen = doctors?.find((d) => d.id === e.target.value)
+                  setForm({ ...form, doctor_id: e.target.value, doctor_name: chosen?.name || '' })
+                }}
+              >
                 <option value="">Choose a doctor</option>
-                {doctors?.map((d) => <option key={d.id} value={d.name}>{d.name} - {d.specialty}</option>)}
+                {doctors?.map((d) => <option key={d.id} value={d.id}>{d.name} - {d.specialty}</option>)}
               </select>
             </div>
             <div><label className="label">Patient Name *</label><input className="input" value={form.patient_name} onChange={(e) => setForm({ ...form, patient_name: e.target.value })} /></div>

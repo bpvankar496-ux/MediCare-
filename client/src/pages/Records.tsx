@@ -235,11 +235,21 @@ export default function Records() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h4 style={{ fontSize: 15, marginBottom: 2 }}>{rec.title}</h4>
-                    <span className="badge badge-neutral" style={{ textTransform: 'capitalize' }}>{rec.type}</span>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <span className="badge badge-neutral" style={{ textTransform: 'capitalize' }}>{rec.type}</span>
+                      {rec.added_by_role === 'doctor' && (
+                        <span className="badge badge-info" title="This record was added by your doctor, not you">Added by doctor</span>
+                      )}
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: 2 }}>
                     <button className="btn btn-ghost btn-sm" onClick={() => exportRecordAsPdf(rec)} title="Export as PDF" style={{ padding: 4 }}><Download size={16} color="var(--text-muted)" /></button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => deleteRecord(rec.id)} style={{ padding: 4 }}><Trash2 size={16} color="var(--error-500)" /></button>
+                    {/* A doctor-added record stays authoritative - the patient can view
+                        and export it, but only records they added themselves can be
+                        deleted here (also enforced server-side either way). */}
+                    {rec.added_by_role !== 'doctor' && (
+                      <button className="btn btn-ghost btn-sm" onClick={() => deleteRecord(rec.id)} style={{ padding: 4 }}><Trash2 size={16} color="var(--error-500)" /></button>
+                    )}
                   </div>
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text)', display: 'flex', flexDirection: 'column', gap: 4 }}>

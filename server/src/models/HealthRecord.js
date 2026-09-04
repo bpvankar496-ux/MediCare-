@@ -2,9 +2,11 @@ import mongoose from 'mongoose'
 import { applyIdTransform } from './plugin.js'
 
 const healthRecordSchema = new mongoose.Schema({
-  // Owner of this record. Always set server-side from the logged-in user's
-  // token (see collections.js) - never trust a client-supplied value here,
-  // otherwise anyone could read/write anyone else's health records.
+  // Owner of this record - i.e. whose medical history this belongs to.
+  // Always set server-side (see collections.js): to the logged-in patient
+  // when they add their own record, or to the target patient a doctor is
+  // adding a record FOR (validated against that doctor's own patients -
+  // never trust a client-supplied value here).
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   title: { type: String, required: true },
   type: { type: String, default: 'document' },
@@ -15,6 +17,15 @@ const healthRecordSchema = new mongoose.Schema({
   file_url: { type: String, default: null },
   ipfs_cid: { type: String, default: null }, // IPFS CID if the file has been pushed on-chain-verifiably to IPFS
   created_at: { type: Date, default: Date.now },
+
+  // New feature: who actually created this record, so a doctor can add a
+  // prescription/report to a patient's history (and the patient can still
+  // see it and know it came from a doctor, not just typed in by themselves).
+  // Kept separate from the free-text `doctor` field above, which is just a
+  // display label and was never a reliable link to an account.
+  added_by_role: { type: String, enum: ['patient', 'doctor'], default: 'patient' },
+  added_by_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  doctor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', default: null },
 
   // --- Blockchain anchoring (Ethereum Sepolia testnet) ---
   // We never put patient data itself on-chain (that would be a serious privacy

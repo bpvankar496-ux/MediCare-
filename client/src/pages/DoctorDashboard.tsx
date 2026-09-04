@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ShieldPlus, LogOut, Calendar, Clock, Video as VideoIcon, Phone, MessageSquare, Stethoscope, PhoneIncoming, TrendingUp, Settings as SettingsIcon, BookOpen, Plus, Trash2 } from 'lucide-react'
+import { ShieldPlus, LogOut, Calendar, Clock, Video as VideoIcon, Phone, MessageSquare, Stethoscope, PhoneIncoming, TrendingUp, Settings as SettingsIcon, BookOpen, Plus, Trash2, Users } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useAuth } from '../lib/auth'
 import { db } from '../lib/db'
@@ -10,6 +10,8 @@ import { LoadingState, EmptyState, Modal, DoctorAvatar } from '../lib/ui'
 import Settings from './Settings'
 import { useIncomingCallInvites, sendCallInvite, useNotificationPermission } from '../lib/callInvites'
 import { QuickSettings } from '../components/QuickSettings'
+import { AvailabilityEditor } from '../components/AvailabilityEditor'
+import { PatientRecords, type DoctorPatient } from '../components/PatientRecords'
 import type { Appointment, Consultation, Doctor, Article } from '../lib/types'
 
 const emptyArticleForm = { title: '', category: '', excerpt: '', content: '', read_time: '' }
@@ -18,7 +20,7 @@ const emptyEndCallForm = { prescription: '', follow_up: false }
 export default function DoctorDashboard() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
-  const [tab, setTab] = useState<'overview' | 'library' | 'settings'>('overview')
+  const [tab, setTab] = useState<'overview' | 'library' | 'availability' | 'patients' | 'settings'>('overview')
   const [linkedDoctor, setLinkedDoctor] = useState<Doctor | null | undefined>(undefined)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [consultations, setConsultations] = useState<Consultation[]>([])
@@ -34,6 +36,19 @@ export default function DoctorDashboard() {
   const [articleError, setArticleError] = useState<string | null>(null)
   const myName = profile?.full_name || profile?.email || 'Doctor'
   const scheduledIds = consultations.filter((c) => c.status === 'scheduled').map((c) => c.id)
+
+  // New feature: distinct patients this doctor has actually treated, derived
+  // from their own appointments/consultations (both are already scoped
+  // server-side to this doctor only - see scopeFilter() in
+  // server/src/routes/collections.js). Used by the "Patients" tab so a
+  // doctor can look up and add to a patient's health records - never an
+  // arbitrary patient, only someone they've actually seen.
+  const myPatients: DoctorPatient[] = useMemo(() => {
+    const byId = new Map<string, string>()
+    appointments.forEach((a) => { if (a.patient_id) byId.set(a.patient_id, a.patient_name) })
+    consultations.forEach((c) => { if (c.patient_id) byId.set(c.patient_id, c.patient_name) })
+    return Array.from(byId, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
+  }, [appointments, consultations])
   const { incoming, dismiss } = useIncomingCallInvites(scheduledIds, myName)
   const { permission, request } = useNotificationPermission()
 
@@ -48,11 +63,12 @@ export default function DoctorDashboard() {
     await db.from('appointments').update({ status }).eq('id', id)
   }
 
+  // The server already scopes /api/consultations to this doctor's own
+  // patients (see scopeFilter() in server/src/routes/collections.js) -
+  // no client-side filtering or "show everyone" fallback needed here.
   const reloadConsultations = async () => {
     const { data: cons } = await db.from('consultations').select('*').order('created_at', { ascending: false })
-    const allConsultations = (cons as Consultation[]) || []
-    const byName = allConsultations.filter((c) => c.doctor_name.trim().toLowerCase() === (profile?.full_name || '').trim().toLowerCase())
-    setConsultations(byName.length > 0 ? byName : allConsultations)
+    setConsultations((cons as Consultation[]) || [])
   }
 
   const reloadArticles = async () => {
@@ -122,14 +138,12 @@ export default function DoctorDashboard() {
         if (!cancelled) setAppointments((appts as Appointment[]) || [])
       }
 
-      // Telemedicine consultations aren't linked to a doctor account by ID (only by the
-      // doctor's display name at booking time), and that name can drift from the doctor's
-      // profile name. To make sure a doctor always sees (and can Join Now) every consultation
-      // booked under them, match loosely: exact name match OR show if no exact match exists.
+      // The server scopes this to consultations actually booked with this
+      // doctor (by doctor_id, with a name-match fallback server-side only
+      // for older rows booked before doctor_id was tracked) - see
+      // scopeFilter() in server/src/routes/collections.js.
       const { data: cons } = await db.from('consultations').select('*').order('created_at', { ascending: false })
-      const allConsultations = (cons as Consultation[]) || []
-      const byName = allConsultations.filter((c) => c.doctor_name.trim().toLowerCase() === (profile!.full_name || '').trim().toLowerCase())
-      if (!cancelled) setConsultations(byName.length > 0 ? byName : allConsultations)
+      if (!cancelled) setConsultations((cons as Consultation[]) || [])
 
       const { data: arts } = await db.from('articles').select('*').order('published_at', { ascending: false })
       if (!cancelled) setArticles((arts as Article[]) || [])
@@ -196,6 +210,12 @@ export default function DoctorDashboard() {
           <button className={`btn btn-sm ${tab === 'library' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('library')}>
             <BookOpen size={15} /> Health Library
           </button>
+          <button className={`btn btn-sm ${tab === 'availability' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('availability')}>
+            <Clock size={15} /> Availability
+          </button>
+          <button className={`btn btn-sm ${tab === 'patients' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('patients')}>
+            <Users size={15} /> Patients
+          </button>
           <button className={`btn btn-sm ${tab === 'settings' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('settings')}>
             <SettingsIcon size={15} /> Settings
           </button>
@@ -203,6 +223,18 @@ export default function DoctorDashboard() {
 
         {tab === 'settings' ? (
           <Settings />
+        ) : tab === 'patients' ? (
+          <PatientRecords patients={myPatients} />
+        ) : tab === 'availability' ? (
+          linkedDoctor ? (
+            <AvailabilityEditor doctor={linkedDoctor} onUpdated={(availability) => setLinkedDoctor({ ...linkedDoctor, availability })} />
+          ) : (
+            <div className="card" style={{ padding: 18, background: 'var(--warning-50)', border: '1px solid var(--warning-100)' }}>
+              <p style={{ fontSize: 14, color: 'var(--warning-600)' }}>
+                Your account isn't linked to a doctor catalog listing yet - ask reception to link it before you can set your availability.
+              </p>
+            </div>
+          )
         ) : tab === 'library' ? (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>

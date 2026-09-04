@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Activity, Plus, Trash2, Heart, Droplet, Gauge, Weight, Thermometer, TrendingUp } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts'
 import { useSupabaseQuery, PageHeader, LoadingState, ErrorState, Modal, EmptyState } from '../lib/ui'
 import { db } from '../lib/db'
 import type { Vital } from '../lib/types'
@@ -17,12 +18,38 @@ export default function Vitals() {
   const { data: vitals, refetch, loading, error } = useSupabaseQuery<Vital>('vitals', '*', 'recorded_at', false)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState({ type: 'Blood Pressure', value: '', unit: 'mmHg', notes: '' })
+  const [chartType, setChartType] = useState('Blood Pressure')
 
   const grouped = useMemo(() => {
     const map: Record<string, Vital[]> = {}
     vitals?.forEach((v) => { if (!map[v.type]) map[v.type] = []; map[v.type].push(v) })
     return map
   }, [vitals])
+
+  // Keep the chart dropdown pointed at a type that actually has data -
+  // otherwise it'd default to "Blood Pressure" even when the patient has
+  // only ever logged, say, Weight.
+  useEffect(() => {
+    if (grouped[chartType]?.length) return
+    const firstWithData = vitalTypes.find((vt) => grouped[vt.type]?.length)
+    if (firstWithData) setChartType(firstWithData.type)
+  }, [grouped, chartType])
+
+  // New feature: a trend chart per vital type so patients (and the doctor
+  // reviewing their records) can see change over time, not just the latest
+  // reading and a flat table. Blood Pressure is stored as "120/80" so it's
+  // split into two lines (systolic/diastolic); every other type is a single
+  // numeric line.
+  const chartData = useMemo(() => {
+    const rows = (grouped[chartType] || []).slice().sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime())
+    if (chartType === 'Blood Pressure') {
+      return rows.map((v) => {
+        const [sys, dia] = v.value.split('/').map((n) => parseFloat(n))
+        return { date: new Date(v.recorded_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), systolic: isNaN(sys) ? null : sys, diastolic: isNaN(dia) ? null : dia }
+      })
+    }
+    return rows.map((v) => ({ date: new Date(v.recorded_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), value: parseFloat(v.value) }))
+  }, [grouped, chartType])
 
   const addVital = async () => {
     if (!form.value) return
@@ -72,6 +99,39 @@ export default function Vitals() {
           )
         })}
       </div>
+
+      {/* Trend chart */}
+      {vitals && vitals.length > 0 && (
+        <div className="card" style={{ padding: 20, marginBottom: 28 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}><TrendingUp size={18} color="var(--primary-500)" /> Trend</h3>
+            <select className="input" style={{ width: 'auto' }} value={chartType} onChange={(e) => setChartType(e.target.value)}>
+              {vitalTypes.filter((vt) => grouped[vt.type]?.length).map((vt) => <option key={vt.type} value={vt.type}>{vt.type}</option>)}
+            </select>
+          </div>
+          {chartData.length < 2 ? (
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Record at least 2 readings of this type to see a trend line.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
+                <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }} />
+                {chartType === 'Blood Pressure' ? (
+                  <>
+                    <Legend />
+                    <Line type="monotone" dataKey="systolic" name="Systolic" stroke="var(--error-500)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                    <Line type="monotone" dataKey="diastolic" name="Diastolic" stroke="var(--primary-500)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                  </>
+                ) : (
+                  <Line type="monotone" dataKey="value" name={chartType} stroke="var(--primary-500)" strokeWidth={2} dot={{ r: 3 }} />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      )}
 
       {/* History */}
       {vitals && vitals.length > 0 ? (
