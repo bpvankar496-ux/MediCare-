@@ -105,12 +105,7 @@ Everything below `MONGODB_URI`/`JWT_SECRET` is optional — the app runs fine wi
 | `SEPOLIA_RPC_URL` / `SEPOLIA_PRIVATE_KEY` / `CONTRACT_ADDRESS` | Blockchain record anchoring (§6) |
 | `PINATA_JWT` | IPFS file pinning (needs blockchain vars too) |
 
-### Roles
+### 10. Roles
 
 Set a user's role on their `Profile` document (`patient` \| `doctor` \| `receptionist`). A doctor account must be linked to a `Doctor` catalog entry via `profile_id` for their dashboard and record access to be scoped correctly (§4).
 
-## 10. Known limitations (worth stating upfront, not discovering live)
-
-- Payments are sandboxed (§5) — by design, not a bug.
-- Blockchain anchoring needs a one-time manual contract deploy (§6) — not automated on first run.
-- No automated test suite beyond a couple of unit tests (`payment.test.ts`, `i18n`-era tests removed); manual QA only.
